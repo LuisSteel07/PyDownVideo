@@ -2,86 +2,129 @@ import flet as ft
 from pytube import YouTube, Stream
 from DownActivity import DownActivity
 
-
 def main(page: ft.Page):
     page.title = "PyDownVideo"
     page.horizontal_alignment = ft.MainAxisAlignment.CENTER
+    page.scroll = ft.ScrollMode.ALWAYS
 
     title = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
-    title1 = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
 
-    def ShowAlert(e) -> ft.AlertDialog :
-
-        yt = YouTube(textfield_URL.value)
-
-        types = []
-
-        for res in yt.streams:
-            types.append(ft.dropdown.Option(res.resolution))
-
-        type_archive = ft.Dropdown(
-            label="Tipo de Archivo",
-            options=[
-                ft.dropdown.Option("Video"),
-                ft.dropdown.Option("Audio")
-            ]
-        )
-
-        type_list = ft.Dropdown(
-            label="Resolusion",
-            options=[
-                types
-            ]
-        )
-
-
-        return ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Propiedades de Video & Audio"),
-            content=[
-                type_archive,
-                type_list
-
-            ],
-            actions=[
-                ft.TextButton("Aceptar"),
-                ft.TextButton("Cerrar", on_click=lambda e: page.close_dialog()),
-            ],
-        )
-
-    def Download(e):
-        yt = YouTube(textfield_URL.value)
-        
-        listDownActivities.controls.append(DownActivity(yt.title, yt.thumbnail_url).ShowActivity())
-
-        page.update()
-        
-
-    textfield_URL = ft.TextField(label="URL")
-    dropdown_RESOLUTION = ft.Dropdown(
-        label="Resolution", 
-        options=[
-            ft.dropdown.Option("1080p"),
-            ft.dropdown.Option("480p"),
-            ft.dropdown.Option("240p"),
-            ft.dropdown.Option("144p"),
-        ]    
-    )
+    progress = ft.ProgressBar(width=400, value=0)
+    label_progress = ft.Text("0%")
 
     listDownActivities = ft.Column(
-        scroll=ft.ScrollMode.AUTO,
-        controls=[]
-    )
+            scroll=ft.ScrollMode.ADAPTIVE,
+            controls=[]
+        )
+
+    listActivity = ft.Column(
+            scroll=ft.ScrollMode.ALWAYS,
+            controls=[]
+        )
+
+    progressRing = ft.Column([
+        ft.ProgressRing(),
+        ft.Text("Buscando Archivo..."),
+    ])
+
+    def on_progress(stream: Stream, chunk, bytes_remaining):
+        total_size = stream.filesize
+        bytes_down = total_size - bytes_remaining
+        porcent = bytes_down / total_size * 100
+
+        progress.value = round(porcent,2) * 0.01
+        label_progress.value = f"{round(porcent,2)}%"
+
+        page.update()
+
+    def Validacion(e) :
+        textfield_URL.color = "white"
+        progress.value = 0
+        label_progress.value = "0%"
+
+        try:
+            yt = YouTube(textfield_URL.value,on_progress_callback=on_progress)
+            print(yt.title)
+
+            page.add(progressRing)
+
+            listActivity.controls.append(DownActivity(yt.title, yt.thumbnail_url).ShowActivity())
+            print("hello")
+            stream = yt.streams.get_lowest_resolution()
+            print("hello")
+
+            page.remove(progressRing)
+            stream.download()
+            page.update()
+
+            # OptionsDown(yt.streams)
+        except Exception as err:
+            textfield_URL.value = "URL Invalida"
+            textfield_URL.color = ft.colors.RED
+            print(err)
+            page.remove(progressRing)
+            page.update()
+
+    # def Download(id):
+    #     yt = YouTube(textfield_URL.value,on_complete_callback=on_progress)
+
+    #     Activity = DownActivity(yt.title, yt.thumbnail_url, yt.streams.get_by_itag(id))
+
+    #     listActivity.controls.append(Activity.ShowActivity())
+    #     listDownActivities.controls = []
+
+    #     stream = yt.streams.get_by_itag(id)
+
+    #     stream.download()
+
+    #     page.update()
+
+    def OptionsDown(streams):
+        print("Hola")
+        print(streams)
+        print("Hola")
+        for sr in streams:
+            if(sr.type == "video"):
+                listDownActivities.controls.append(
+                    ft.Card(
+                        content=ft.Row(controls=[
+                                ft.Text("Video"),
+                                ft.Text(sr.resolution),
+                                ft.Text(sr.fps),
+                                ft.Text(value=f"{sr.filesize_mb} MB"),
+                                ft.IconButton(icon=ft.icons.DOWNLOAD,icon_color="blue600",tooltip="Download", on_click=lambda e: Download(sr.itag))
+                            ]
+                        )
+                    )
+                )
+            elif(sr.type == "audio"):
+                listDownActivities.controls.append(
+                    ft.Card(
+                        content=ft.Row(controls=[
+                                ft.Text("Audio"),
+                                ft.Text(sr.abr),
+                                ft.Text(sr.audio_codec),
+                                ft.Text(value=f"{sr.filesize_mb} MB"),
+                                ft.IconButton(icon=ft.icons.DOWNLOAD,icon_color="blue600",tooltip="Download")
+                            ]
+                        )
+                    )
+                )
+
+    textfield_URL = ft.TextField(label="URL", width=600)
 
     page.add(
             title,
-            title1,
-            ft.Column(controls=[
+            ft.Row(controls=[
                 textfield_URL,
-                dropdown_RESOLUTION
+                ft.IconButton(icon=ft.icons.SEARCH, on_click=Validacion),
             ]),
-            ft.IconButton(icon=ft.icons.SEARCH, on_click=lambda e: page.show_dialog(ShowAlert(e))),
-            listDownActivities
+            ft.Row([
+                progress,
+                label_progress,
+            ]),
+            listActivity,
+            listDownActivities,
     )
 
 ft.app(main)

@@ -1,4 +1,5 @@
 import flet as ft
+from pytube import Stream
 
 class DownActivity():
     def __init__(self, _title, _thumbnail):
@@ -11,12 +12,7 @@ class DownActivity():
                 content=ft.Row(
                     [
                         ft.Image(self.getThumbnail(), width=240),
-                        ft.Column(
-                            [
-                                ft.Text(self.getTitle(), size=30),
-                                ft.ProgressBar(width=400)
-                            ]
-                        )
+                        ft.Text(self.getTitle(), size=30),
                     ]
                 )
             )
