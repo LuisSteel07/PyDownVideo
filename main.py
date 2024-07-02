@@ -14,22 +14,31 @@ def main(page: ft.Page):
     progress = ft.ProgressBar(value=0, width=400)
     label_progress = ft.Text("0%")
     estado = ft.Text("",size=22, weight=ft.FontWeight.BOLD)
+    textfield_PATH_FILE = ft.TextField(label="Directorio", width=600,tooltip="Coloque un directorio donde desea que se guarde el video/audio (Predeterminado es Download)")
+
+    config_alert = ft.AlertDialog(
+        modal=True,
+        adaptive=True,
+        title=ft.Text("Establecer Ruta de Descarga:"),
+        content=textfield_PATH_FILE,
+        actions=[
+            ft.TextButton("Cerrar", on_click=lambda e: page.close(config_alert)),
+        ],
+    )
 
     listActivity = ft.Column(
             scroll=ft.ScrollMode.ALWAYS,
             controls=[]
         )
 
-    listDownActivities = ft.Column(
-            scroll=ft.ScrollMode.ALWAYS,
-            controls=[],
-            alignment=ft.MainAxisAlignment.SPACE_EVENLY
-        )
-
-    progressRing = ft.Column([
-        ft.ProgressRing(),
-        ft.Text("Buscando Archivo..."),
-    ])
+    progressRing = ft.Row([
+        ft.Column([
+            ft.Row([
+                ft.ProgressRing(),
+            ],alignment=ft.MainAxisAlignment.CENTER),
+            ft.Text("Buscando Archivo..."),
+        ]),
+    ], alignment=ft.MainAxisAlignment.CENTER)
 
     def on_progress(stream: Stream, chunk, bytes_remaining):
         total_size = stream.filesize
@@ -60,16 +69,12 @@ def main(page: ft.Page):
             page.add(progressRing)
 
             page.update()
-
             yt = YouTube(textfield_URL.value, on_progress_callback=on_progress)
 
-            listDownActivities.controls.append(DownActivity(yt).ShowActivity())
-
-            OptionsDown(yt.streams)
-
             page.remove(progressRing)
-            page.update()
+            Download(yt)
 
+            page.update()
         except Exception as err:
             textfield_URL.value = "URL Invalida"
             textfield_URL.color = ft.colors.RED
@@ -79,65 +84,7 @@ def main(page: ft.Page):
             page.remove(progressRing)
             page.update()
 
-    def OptionsDown(streams):
-        listDownActivities.controls.append(
-            ft.Container(
-                content=ft.Row(
-                    controls=[
-                        ft.Text("Tipo", size=20),
-                        ft.Text("Calidad", size=20),
-                        ft.Text("FPS/Codec", size=20),
-                        ft.Text("Formato", size=20),
-                        ft.Text("Peso MB", size=20),
-                        ft.Text("Descargar", size=20)
-                    ],
-                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
-                ),
-                padding=15,
-                bgcolor=ft.colors.GREY_800
-            )
-        )
-
-        for sr in streams:
-            if(sr.type == "video"):
-                listDownActivities.controls.append(
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[
-                                ft.Text("Video"),
-                                ft.Text(sr.resolution),
-                                ft.Text(sr.fps),
-                                ft.Text(sr.mime_type),
-                                ft.Text(value=f"{sr.filesize_mb} MB"),
-                                ft.IconButton(icon=ft.icons.DOWNLOAD,icon_color="blue600",tooltip="Download", on_click=lambda e: Download(sr.itag))
-                            ],
-                            alignment=ft.MainAxisAlignment.SPACE_EVENLY
-                        ),
-                        padding=15
-                    )
-                )
-            elif(sr.type == "audio"):
-                listDownActivities.controls.append(
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[
-                                ft.Text("Audio"),
-                                ft.Text(sr.abr),
-                                ft.Text(sr.audio_codec),
-                                ft.Text(sr.mime_type),
-                                ft.Text(value=f"{sr.filesize_mb} MB"),
-                                ft.IconButton(icon=ft.icons.DOWNLOAD,icon_color="blue600",tooltip="Download", on_click=lambda e: Download(sr.itag))
-                            ],
-                            alignment=ft.MainAxisAlignment.SPACE_EVENLY
-                        ),
-                        padding=15
-                    )
-                )
-
-    def Download(id):
-        yt = YouTube(textfield_URL.value,on_progress_callback=on_progress)
-        
-        listDownActivities.controls = []
+    def Download(yt: YouTube):
         listActivity.controls.append(DownActivity(yt).ShowActivity())
 
         estado.value = "Descargando Archivo..."
@@ -146,24 +93,44 @@ def main(page: ft.Page):
 
         page.update()
 
-        if(textfield_PATH_FILE.value == ""):
-            stream = yt.streams.get_by_itag(id).download(output_path=f"{os.path.expanduser('~')}\\Downloads")
-        else:
-            try:
-                stream = yt.streams.get_by_itag(id).download(output_path=textfield_PATH_FILE.value)
-            except:
-                textfield_PATH_FILE.value = "Directorio Invalido"
-                textfield_PATH_FILE.color = ft.colors.RED
-                page.update()
+        try:
+
+            if(textfield_PATH_FILE.value == ""):
+                yt.streams.get_lowest_resolution().download(output_path=f"{os.path.expanduser('~')}\\Downloads")
+            else:
+                yt.streams.get_lowest_resolution().download(output_path=textfield_PATH_FILE.value)
+        
+        except Exception as err:
+            textfield_PATH_FILE.value = "Directorio Invalido"
+            textfield_PATH_FILE.color = ft.colors.RED
+            print(err)
+            page.update()
 
     SearchButton = ft.IconButton(icon=ft.icons.SEARCH, on_click=Validacion)
     textfield_URL = ft.TextField(label="URL", width=600)
-    textfield_PATH_FILE = ft.TextField(label="Directorio", width=600,tooltip="Coloque un directorio donde desea que se guarde el video/audio (Predeterminado es Download)")
+
+    AppBar = ft.AppBar(
+        title=title,
+        leading=ft.Container(content=ft.Image("./src/source/python.svg",width=120),padding=20),
+        leading_width = 100,
+        center_title=False,
+        toolbar_height=75,
+        bgcolor=ft.colors.GREY_800,
+        actions=[
+            ft.Container(
+                content=ft.PopupMenuButton(
+                    items=[
+                        ft.PopupMenuItem(text="Ruta de Descarga", on_click= lambda e: page.open(config_alert)),
+                        ft.PopupMenuItem(text="Tema", on_click= lambda e: page.open(config_alert))
+                    ]
+                )
+            )
+        ]
+    )
+
+    page.appbar = AppBar
 
     page.add(
-            ft.Row([
-                title,
-            ],alignment=ft.MainAxisAlignment.CENTER),
             ft.Row(
                 controls=[
                     textfield_URL,
@@ -172,9 +139,6 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER
             ),
-            ft.Row([
-                textfield_PATH_FILE
-            ],alignment=ft.MainAxisAlignment.SPACE_EVENLY),
             ft.Row(
                 controls=[
                     progress,
@@ -182,8 +146,7 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_EVENLY
             ),
-            listActivity,
-            listDownActivities
+            listActivity
     )
 
 ft.app(main)

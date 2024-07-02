@@ -1,0 +1,9 @@
+# Python Caché
+__pycache__/
+
+# Others
+main.spec*
+
+# Build and Pack
+build/
+dist/
