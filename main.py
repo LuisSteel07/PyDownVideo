@@ -1,4 +1,5 @@
 import flet as ft
+import os
 from pytube import YouTube, Stream
 from DownActivity import DownActivity
 
@@ -6,6 +7,7 @@ def main(page: ft.Page):
     page.title = "PyDownVideo"
     page.horizontal_alignment = ft.MainAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.ALWAYS
+    page.theme_mode = ft.ThemeMode.DARK
 
     title = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
 
@@ -43,6 +45,9 @@ def main(page: ft.Page):
             listActivity.controls = []
             estado.value = "Archivo Descargado"
             estado.color = ft.colors.GREEN
+
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
 
         page.update()
 
@@ -89,7 +94,7 @@ def main(page: ft.Page):
                     alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                 ),
                 padding=15,
-                bgcolor=ft.colors.GREY
+                bgcolor=ft.colors.GREY_800
             )
         )
 
@@ -137,16 +142,28 @@ def main(page: ft.Page):
 
         estado.value = "Descargando Archivo..."
         estado.color = ft.colors.BLUE
+        textfield_PATH_FILE.color = ft.colors.WHITE
 
         page.update()
 
-        stream = yt.streams.get_by_itag(id).download()
+        if(textfield_PATH_FILE.value == ""):
+            stream = yt.streams.get_by_itag(id).download(output_path=f"{os.path.expanduser('~')}\\Downloads")
+        else:
+            try:
+                stream = yt.streams.get_by_itag(id).download(output_path=textfield_PATH_FILE.value)
+            except:
+                textfield_PATH_FILE.value = "Directorio Invalido"
+                textfield_PATH_FILE.color = ft.colors.RED
+                page.update()
 
     SearchButton = ft.IconButton(icon=ft.icons.SEARCH, on_click=Validacion)
     textfield_URL = ft.TextField(label="URL", width=600)
+    textfield_PATH_FILE = ft.TextField(label="Directorio", width=600,tooltip="Coloque un directorio donde desea que se guarde el video/audio (Predeterminado es Download)")
 
     page.add(
-            title,
+            ft.Row([
+                title,
+            ],alignment=ft.MainAxisAlignment.CENTER),
             ft.Row(
                 controls=[
                     textfield_URL,
@@ -155,6 +172,9 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER
             ),
+            ft.Row([
+                textfield_PATH_FILE
+            ],alignment=ft.MainAxisAlignment.SPACE_EVENLY),
             ft.Row(
                 controls=[
                     progress,
