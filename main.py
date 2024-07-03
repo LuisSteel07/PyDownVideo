@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.ALWAYS
     page.theme_mode = ft.ThemeMode.DARK
 
-    Hight_Resolution = ft.Checkbox(label="Descargar Máxima Calidad", tooltip="Al activarlo solo descargará los videos en alta calidad", value=False)
+    Hight_Resolution = ft.Checkbox(label="Descargar Máxima Calidad", tooltip="Al activarlo se descargarán los videos de Playlist en Alta Calidad", value=False)
     ThemeIcon = ft.PopupMenuItem("Tema",icon=ft.icons.LIGHT_MODE,on_click= lambda e: Change_Theme(e))
     title = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
 
@@ -109,14 +109,13 @@ def main(page: ft.Page):
             ])
         )
 
-    def Validacion(e) :
-        page.update()
+    def Validacion(e):
         try:
             SearchButton.disabled = True
             textfield_URL.disabled = True
             page.add(progressRing)
-
             page.update()
+
             if("list" in textfield_URL.value):
                 yt = Playlist(textfield_URL.value)
                 Download_Playlist(yt)
@@ -149,7 +148,6 @@ def main(page: ft.Page):
                 stream.download(output_path=f"{os.path.expanduser('~')}\\Downloads")
             elif(textfield_PATH_FILE.value != ""):
                 stream.download(output_path=textfield_PATH_FILE.value)    
-        
         except error.URLError as err:
             page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
             listActivity.controls.clear()
@@ -236,24 +234,24 @@ def main(page: ft.Page):
                 rows=[
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams.filter(type="video").first().resolution)),
-                        ft.DataCell(ft.Text(streams.filter(type="video").first().filesize_mb)),
-                        ft.DataCell(ft.Text(streams.filter(type="video").first().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video").first()))),
+                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="1080p")[0].resolution)),
+                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="1080p")[0].filesize_mb)),
+                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="1080p")[0].mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video", resolution="1080p")[0]))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams.filter(type="video")[1].resolution)),
-                        ft.DataCell(ft.Text(streams.filter(type="video")[1].filesize_mb)),
-                        ft.DataCell(ft.Text(streams.filter(type="video")[1].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video")[1]))),
+                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="480p")[0].resolution)),
+                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="480p")[0].filesize_mb)),
+                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="480p")[0].mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video",resolution="480p")[0]))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
-                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
-                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams[floor(len(streams.filter(type="video")) / 2)]))),
+                        ft.DataCell(ft.Text(streams.get_lowest_resolution().resolution)),
+                        ft.DataCell(ft.Text(streams.get_lowest_resolution().filesize_mb)),
+                        ft.DataCell(ft.Text(streams.get_lowest_resolution().mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_lowest_resolution()))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Audio")),
