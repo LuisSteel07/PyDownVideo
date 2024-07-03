@@ -1,5 +1,6 @@
 import flet as ft
 import os
+from math import floor
 from urllib import error
 from pytube import YouTube, Stream, Playlist, exceptions
 from DownActivity import DownActivity
@@ -32,6 +33,10 @@ def main(page: ft.Page):
     )
 
     listActivity = ft.Column(
+            scroll=ft.ScrollMode.ALWAYS,
+            controls=[]
+        )
+    listDownOptions = ft.Column(
             scroll=ft.ScrollMode.ALWAYS,
             controls=[]
         )
@@ -87,6 +92,23 @@ def main(page: ft.Page):
 
         page.update()
 
+    def AppEndListActivity(video: YouTube):
+        listActivity.controls.append(
+            ft.Row(controls=[
+                ft.Image(video.thumbnail_url, width=240),
+                ft.Column(controls=[
+                    ft.Text(video.title, size=30),
+                    ft.Row(
+                        controls=[
+                            progress,
+                            label_progress
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY
+                    ),
+                ])
+            ])
+        )
+
     def Validacion(e) :
         page.update()
         try:
@@ -100,61 +122,33 @@ def main(page: ft.Page):
                 Download_Playlist(yt)
             else:
                 yt = YouTube(textfield_URL.value, on_progress_callback=on_progress)
-                Download(yt)
+                DownOptions(yt.streams)
             
             estado.visible = False
             page.update()
         except exceptions.RegexMatchError:
             page.open(Show_Alert_ERROR("URL Inválida"))
-            print()
             SearchButton.disabled = False
             textfield_URL.disabled = False
             page.remove(progressRing)
             page.update()
         except Exception as err:
-            page.open(Show_Alert_ERROR("err"))
+            page.open(Show_Alert_ERROR(err))
             SearchButton.disabled = False
             textfield_URL.disabled = False
             page.remove(progressRing)
             page.update()
 
-    def Download(yt: YouTube):
-        listActivity.controls.append(
-            ft.Card(
-                content=ft.Container(
-                    content=ft.Row(
-                        [
-                            ft.Image(yt.thumbnail_url, width=240),
-                            ft.Column([
-                                ft.Text(yt.title, size=30),
-                                ft.Row(
-                                    controls=[
-                                        progress,
-                                        label_progress
-                                    ],
-                                    alignment=ft.MainAxisAlignment.SPACE_EVENLY
-                                ),
-                            ])
-                        ]
-                    )
-                )
-            )
-        )
-
+    def Download(stream: Stream):
         estado.visible = True
-        page.remove(progressRing)
+        listDownOptions.controls = []
         page.update()
 
         try:
-
-            if(textfield_PATH_FILE.value == "" and Hight_Resolution.value == True):
-                yt.streams.get_highest_resolution().download(output_path=f"{os.path.expanduser('~')}\\Downloads")
-            elif(textfield_PATH_FILE.value == "" and Hight_Resolution.value == False):
-                yt.streams.get_lowest_resolution().download(output_path=f"{os.path.expanduser('~')}\\Downloads")
-            elif(textfield_PATH_FILE.value != "" and Hight_Resolution.value == True):
-                yt.streams.get_highest_resolution().download(output_path=textfield_PATH_FILE.value)
-            elif(textfield_PATH_FILE.value != "" and Hight_Resolution.value == False):
-                yt.streams.get_lowest_resolution().download(output_path=textfield_PATH_FILE.value)    
+            if(textfield_PATH_FILE.value == ""):
+                stream.download(output_path=f"{os.path.expanduser('~')}\\Downloads")
+            elif(textfield_PATH_FILE.value != ""):
+                stream.download(output_path=textfield_PATH_FILE.value)    
         
         except error.URLError as err:
             page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
@@ -162,7 +156,8 @@ def main(page: ft.Page):
             textfield_URL.disabled = False
             SearchButton.disabled = False
             estado.visible = False
-            page.remove(progressRing)
+            listActivity.controls.clear()
+            page.update()
             return -1
         except Exception as err:
             page.open(Show_Alert_ERROR(err))
@@ -200,33 +195,11 @@ def main(page: ft.Page):
             page.remove(progressRing)
             return -1
 
-        page.remove(progressRing)
         estado.visible = True
 
         for video in playlist.videos:
             video.register_on_progress_callback(on_progress)
-            listActivity.controls.append(
-                ft.Card(
-                    content=ft.Container(
-                        content=ft.Row(
-                            [
-                                ft.Image(video.thumbnail_url, width=240),
-                                ft.Column([
-                                    ft.Text(video.title, size=30),
-                                    ft.Row(
-                                        controls=[
-                                            progress,
-                                            label_progress
-                                        ],
-                                        alignment=ft.MainAxisAlignment.SPACE_EVENLY
-                                    ),
-                                ])
-                            ]
-                        )
-                    )
-                )
-            )
-            
+            AppEndListActivity(video)
             page.update()
 
             try:
@@ -245,6 +218,56 @@ def main(page: ft.Page):
 
             listActivity.controls = []
             page.update()
+
+    def DownOptions(streams):
+        video = YouTube(textfield_URL.value)
+
+        AppEndListActivity(video)
+
+        listDownOptions.controls.append(
+            ft.DataTable(
+                columns=[
+                    ft.DataColumn(ft.Text("Tipo")),
+                    ft.DataColumn(ft.Text("Calidad")),
+                    ft.DataColumn(ft.Text("Tamaño")),
+                    ft.DataColumn(ft.Text("Mime_Type")),
+                    ft.DataColumn(ft.Text("Acción")),
+                ],
+                rows=[
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Video")),
+                        ft.DataCell(ft.Text(streams.filter(type="video").first().resolution)),
+                        ft.DataCell(ft.Text(streams.filter(type="video").first().filesize_mb)),
+                        ft.DataCell(ft.Text(streams.filter(type="video").first().mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video").first()))),
+                    ]),
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Video")),
+                        ft.DataCell(ft.Text(streams.filter(type="video")[1].resolution)),
+                        ft.DataCell(ft.Text(streams.filter(type="video")[1].filesize_mb)),
+                        ft.DataCell(ft.Text(streams.filter(type="video")[1].mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video")[1]))),
+                    ]),
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Video")),
+                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
+                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
+                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams[floor(len(streams.filter(type="video")) / 2)]))),
+                    ]),
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Audio")),
+                        ft.DataCell(ft.Text(streams.get_audio_only().abr)),
+                        ft.DataCell(ft.Text(streams.get_audio_only().filesize_mb)),
+                        ft.DataCell(ft.Text(streams.get_audio_only().mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_audio_only()))),
+                    ]),
+                ]
+            )
+        )
+        
+        page.remove(progressRing)
+        page.update()
 
     SearchButton = ft.IconButton(icon=ft.icons.SEARCH, on_click=Validacion)
     textfield_URL = ft.TextField(label="URL", width=600)
@@ -277,7 +300,8 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER
             ),
-            listActivity
+            listActivity,
+            listDownOptions
     )
 
 ft.app(main)
