@@ -11,7 +11,7 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.ALWAYS
     page.theme_mode = ft.ThemeMode.DARK
 
-    Hight_Resolution = ft.Checkbox(label="Descargar Máxima Calidad", tooltip="Al activarlo se descargarán los videos de Playlist en Alta Calidad", value=False)
+    Hight_Resolution = ft.Checkbox(label="Descargar Máxima Calidad", tooltip="Al activarlo se descargarán los videos de Playlist en Alta Calidad (Calidad base es 480p)", value=False)
     ThemeIcon = ft.PopupMenuItem("Tema",icon=ft.icons.LIGHT_MODE,on_click= lambda e: Change_Theme(e))
     title = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
 
@@ -36,8 +36,9 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.ALWAYS,
             controls=[]
         )
-    listDownOptions = ft.Column(
+    listDownOptions = ft.Row(
             scroll=ft.ScrollMode.ALWAYS,
+            alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             controls=[]
         )
 
@@ -234,17 +235,10 @@ def main(page: ft.Page):
                 rows=[
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="1080p")[0].resolution)),
-                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="1080p")[0].filesize_mb)),
-                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="1080p")[0].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video", resolution="1080p")[0]))),
-                    ]),
-                    ft.DataRow([
-                        ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="480p")[0].resolution)),
-                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="480p")[0].filesize_mb)),
-                        ft.DataCell(ft.Text(streams.filter(type="video", resolution="480p")[0].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.filter(type="video",resolution="480p")[0]))),
+                        ft.DataCell(ft.Text(streams.get_highest_resolution().resolution)),
+                        ft.DataCell(ft.Text(streams.get_highest_resolution().filesize_mb)),
+                        ft.DataCell(ft.Text(streams.get_highest_resolution().mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_highest_resolution()))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
@@ -254,13 +248,22 @@ def main(page: ft.Page):
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_lowest_resolution()))),
                     ]),
                     ft.DataRow([
+                        ft.DataCell(ft.Text("Video")),
+                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
+                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
+                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams[floor(len(streams.filter(type="video")) / 2)]))),
+                    ]),
+                    ft.DataRow([
                         ft.DataCell(ft.Text("Audio")),
                         ft.DataCell(ft.Text(streams.get_audio_only().abr)),
                         ft.DataCell(ft.Text(streams.get_audio_only().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_audio_only().mime_type)),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_audio_only()))),
                     ]),
-                ]
+                ],
+                width=800,
+                heading_row_color=ft.colors.GREY_800,
             )
         )
         
