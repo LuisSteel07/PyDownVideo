@@ -1,9 +1,13 @@
 import flet as ft
 import os
+from threading import Thread
 from math import floor
 from urllib import error
 from pytube import YouTube, Stream, Playlist, exceptions
 from DownActivity import DownActivity
+
+def AddTaskThread(task: Thread):
+        task.start()
 
 def main(page: ft.Page):
     page.title = "PyDownVideo"
@@ -36,6 +40,7 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.ALWAYS,
             controls=[]
         )
+
     listDownOptions = ft.Row(
             scroll=ft.ScrollMode.ALWAYS,
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
@@ -83,13 +88,10 @@ def main(page: ft.Page):
         progress.value = round(porcent,2) / 100
 
         if(round(porcent,2) == 100):
-            label_progress.value = "0%"
-            progress.value = 0
-            listActivity.controls = []
+            # label_progress.value = "0%"
+            # progress.value = 0
+            # listActivity.controls = []
             estado.visible = False
-
-            textfield_URL.disabled = False
-            SearchButton.disabled = False
 
         page.update()
 
@@ -139,12 +141,21 @@ def main(page: ft.Page):
             page.remove(progressRing)
             page.update()
 
-    def Download(stream: Stream):
+    def Download(stream: Stream, path: str = ""):
+        video = YouTube(textfield_URL.value, on_progress_callback=on_progress)
+
+        AppEndListActivity(video)
+
         estado.visible = True
+        textfield_URL.disabled = False
+        SearchButton.disabled = False
+
         listDownOptions.controls = []
         page.update()
 
         try:
+            if(path != ""):
+                stream.download(output_path=path)
             if(textfield_PATH_FILE.value == ""):
                 stream.download(output_path=f"{os.path.expanduser('~')}\\Downloads")
             elif(textfield_PATH_FILE.value != ""):
@@ -203,13 +214,13 @@ def main(page: ft.Page):
 
             try:
                 if(textfield_PATH_FILE.value == "" and Hight_Resolution.value == True):
-                    video.streams.get_highest_resolution().download(output_path=f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
+                    Download(video.streams.get_highest_resolution(),f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
                 elif(textfield_PATH_FILE.value == "" and Hight_Resolution.value == False):
-                    video.streams.get_lowest_resolution().download(output_path=f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
+                    Download(video.streams.get_lowest_resolution(),f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
                 elif(textfield_PATH_FILE.value != "" and Hight_Resolution.value == True):
-                    video.streams.get_highest_resolution().download(output_path=textfield_PATH_FILE.value)
+                    Download(video.streams.get_highest_resolution(),textfield_PATH_FILE.value)
                 elif(textfield_PATH_FILE.value != "" and Hight_Resolution.value == False):
-                    video.streams.get_lowest_resolution().download(output_path=textfield_PATH_FILE.value)    
+                    Download(video.streams.get_lowest_resolution(),textfield_PATH_FILE.value)    
             except Exception as err:
                 page.open(Show_Alert_ERROR(err))
                 estado.value = False
@@ -219,10 +230,6 @@ def main(page: ft.Page):
             page.update()
 
     def DownOptions(streams):
-        video = YouTube(textfield_URL.value)
-
-        AppEndListActivity(video)
-
         listDownOptions.controls.append(
             ft.DataTable(
                 columns=[
@@ -238,28 +245,28 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text(streams.get_highest_resolution().resolution)),
                         ft.DataCell(ft.Text(streams.get_highest_resolution().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_highest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_highest_resolution()))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams.get_highest_resolution(),"",))))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().resolution)),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_lowest_resolution()))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams.get_lowest_resolution(),"",))))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams[floor(len(streams.filter(type="video")) / 2)]))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams[floor(len(streams.filter(type="video")) / 2)],"",))))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Audio")),
                         ft.DataCell(ft.Text(streams.get_audio_only().abr)),
                         ft.DataCell(ft.Text(streams.get_audio_only().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_audio_only().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download(streams.get_audio_only()))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams.get_audio_only(),"",))))),
                     ]),
                 ],
                 width=800,
@@ -275,7 +282,7 @@ def main(page: ft.Page):
 
     page.appbar = ft.AppBar(
         title=title,
-        leading=ft.Container(content=ft.Image("./src/source/python.svg",width=120),padding=20),
+        leading=ft.Container(content=ft.Image("./src/source/python.png",width=180),padding=20),
         leading_width = 100,
         center_title=False,
         toolbar_height=75,
@@ -301,8 +308,8 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER
             ),
+            listDownOptions,
             listActivity,
-            listDownOptions
     )
 
 ft.app(main)

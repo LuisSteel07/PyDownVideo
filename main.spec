@@ -34,5 +34,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version='C:\\Users\\Luis\\AppData\\Local\\Temp\\a6f25cf9-c469-4083-89b6-6f1a1b23bc52',
+    version='C:\\Users\\Luis\\AppData\\Local\\Temp\\c0e72ee6-cb6c-4bb0-9089-a2b5b4f392af',
+    icon=['python.png'],
 )
