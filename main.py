@@ -100,14 +100,14 @@ def main(page: ft.Page):
 
         page.update()
 
-    def on_complete(data, text: str):
+    def on_complete(data, path: str):
         del ListActivities[0]
         del listActivity.controls[0]
 
         progress_bar.value = 0
         progress_label.value = "0%"
 
-        AdminListActivities(True,textfield_PATH_FILE.value)
+        AdminListActivities(True,path)
 
     def AdminListActivities(stream, path: str = ""):
         page.update()
@@ -229,7 +229,10 @@ def main(page: ft.Page):
             else:
                 ListActivities.append(video.streams.get_lowest_resolution())
             
-            page.update()
+        textfield_URL.disabled = False
+        SearchButton.disabled = False
+        
+        page.update()
 
         try:
             if(textfield_PATH_FILE.value == ""):
