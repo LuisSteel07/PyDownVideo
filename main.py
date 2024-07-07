@@ -222,26 +222,24 @@ def main(page: ft.Page):
         for video in playlist.videos:
             AppEndListActivity(video)
             video.register_on_progress_callback(on_progress)
+            video.register_on_complete_callback(on_complete)
+
+            if(Hight_Resolution.value == True):
+                ListActivities.append(video.streams.get_highest_resolution())
+            else:
+                ListActivities.append(video.streams.get_lowest_resolution())
+            
             page.update()
 
-            try:
-                if(textfield_PATH_FILE.value == "" and Hight_Resolution.value == True):
-                    Download(video.streams.get_highest_resolution(),f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
-                elif(textfield_PATH_FILE.value == "" and Hight_Resolution.value == False):
-                    Download(video.streams.get_lowest_resolution(),f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
-                elif(textfield_PATH_FILE.value != "" and Hight_Resolution.value == True):
-                    Download(video.streams.get_highest_resolution(),textfield_PATH_FILE.value)
-                elif(textfield_PATH_FILE.value != "" and Hight_Resolution.value == False):
-                    Download(video.streams.get_lowest_resolution(),textfield_PATH_FILE.value)    
-            except Exception as err:
-                page.open(Show_Alert_ERROR(err))
-                estado.value = False
-                page.update()
+        try:
+            if(textfield_PATH_FILE.value == ""):
+                AdminListActivities(True, f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
+            else:
+                AdminListActivities(True, textfield_PATH_FILE.value)
 
-            progress_bar.value = 0
-            progress_label.value = "0%"
-
-            listActivity.controls = []
+        except Exception as err:
+            page.open(Show_Alert_ERROR(err))
+            estado.value = False
             page.update()
 
     def DownOptions(streams):
