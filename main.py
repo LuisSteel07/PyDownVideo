@@ -107,17 +107,14 @@ def main(page: ft.Page):
         progress_bar.value = 0
         progress_label.value = "0%"
 
-        AdminListActivities(True,path)
+        AdminListActivities(True)
 
     def AdminListActivities(stream, path: str = ""):
         page.update()
         if stream == True:
             if len(ListActivities) > 0:
-                Download(ListActivities[0], path)
+                Download(ListActivities[0])
                 estado.visible = False
-                if(len(ListActivities) != 0):
-                    del ListActivities[0]
-                    del listActivity.controls[0]
 
         else:
             listDownOptions.controls = []
@@ -189,61 +186,37 @@ def main(page: ft.Page):
                 page.update()
 
     def Download_Playlist(playlist: Playlist):
-        try:
-            os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
-        except FileExistsError as err:
-            page.open(Show_Alert_ERROR(f"La carpeta {playlist.title} ya está creada, por favor eliminela y vuelva a intentarlo"))
-            # listActivity.controls.clear()
-            textfield_URL.disabled = False
-            SearchButton.disabled = False
-            estado.visible = False
-            page.remove(progressRing)
-            return -1
-        except error.URLError as err:
-            page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
-            listActivity.controls.clear()
-            textfield_URL.disabled = False
-            SearchButton.disabled = False
-            estado.visible = False
-            page.remove(progressRing)
-            return -1
-        except Exception as err:
-            page.open(Show_Alert_ERROR(err))
-            listActivity.controls.clear()
-            textfield_URL.disabled = False
-            SearchButton.disabled = False
-            estado.visible = False
-            page.remove(progressRing)
-            return -1
-
         estado.visible = True
         progressRing.visible = False
 
-        for video in playlist.videos:
-            AppEndListActivity(video)
-            video.register_on_progress_callback(on_progress)
-            video.register_on_complete_callback(on_complete)
-
-            if(Hight_Resolution.value == True):
-                ListActivities.append(video.streams.get_highest_resolution())
-            else:
-                ListActivities.append(video.streams.get_lowest_resolution())
-            
-        textfield_URL.disabled = False
-        SearchButton.disabled = False
-        
-        page.update()
-
         try:
-            if(textfield_PATH_FILE.value == ""):
-                AdminListActivities(True, f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
-            else:
-                AdminListActivities(True, textfield_PATH_FILE.value)
+            for video in playlist.videos:
+                AppEndListActivity(video)
+                video.register_on_progress_callback(on_progress)
+                video.register_on_complete_callback(on_complete)
 
+                if(Hight_Resolution.value == True and textfield_PATH_FILE.value == ""):
+                    AdminListActivities(video.streams.get_highest_resolution())
+                elif(Hight_Resolution.value == False and textfield_PATH_FILE.value == ""):
+                    AdminListActivities(video.streams.get_lowest_resolution())
+                elif(Hight_Resolution.value == True and textfield_PATH_FILE.value != ""):
+                    AdminListActivities(video.streams.get_highest_resolution(),textfield_PATH_FILE.value)
+                elif(Hight_Resolution.value == False and textfield_PATH_FILE.value != ""):
+                    AdminListActivities(video.streams.get_lowest_resolution(),textfield_PATH_FILE.value)
+
+                page.update()
         except Exception as err:
             page.open(Show_Alert_ERROR(err))
-            estado.value = False
+            listActivity.controls.clear()
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
+            estado.visible = False
             page.update()
+            return -1
+
+        textfield_URL.disabled = False
+        SearchButton.disabled = False
+        page.update()
 
     def DownOptions(streams):
         AppEndListActivity(YouTube(textfield_URL.value))
