@@ -1,13 +1,9 @@
 import flet as ft
 import os
-from threading import Thread
 from math import floor
 from urllib import error
 from pytube import YouTube, Stream, Playlist, exceptions
 from DownActivity import DownActivity
-
-def AddTaskThread(task: Thread):
-        task.start()
 
 def main(page: ft.Page):
     page.title = "PyDownVideo"
@@ -15,12 +11,17 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.ALWAYS
     page.theme_mode = ft.ThemeMode.DARK
 
+    progress_bar = ft.ProgressBar(width=400, value=0)
+    progress_label = ft.Text("0%")
+
+    progress_grid = ft.Row([
+        progress_bar,
+        progress_label
+    ])
+
     Hight_Resolution = ft.Checkbox(label="Descargar Máxima Calidad", tooltip="Al activarlo se descargarán los videos de Playlist en Alta Calidad (Calidad base es 480p)", value=False)
     ThemeIcon = ft.PopupMenuItem("Tema",icon=ft.icons.LIGHT_MODE,on_click= lambda e: Change_Theme(e))
     title = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
-
-    progress = ft.ProgressBar(value=0, width=400)
-    label_progress = ft.Text("0%")
 
     estado = ft.ProgressRing(visible=False)
 
@@ -40,13 +41,11 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.ALWAYS,
             controls=[]
         )
-
     listDownOptions = ft.Row(
             scroll=ft.ScrollMode.ALWAYS,
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             controls=[]
         )
-
     progressRing = ft.Row([
         ft.Column([
             ft.Row([
@@ -55,6 +54,8 @@ def main(page: ft.Page):
             ft.Text("Buscando Archivo..."),
         ]),
     ], alignment=ft.MainAxisAlignment.CENTER)
+
+    ListActivities = list()
 
     def Change_Theme(e):
         if(page.theme_mode == ft.ThemeMode.DARK):
@@ -79,38 +80,59 @@ def main(page: ft.Page):
         
         return alert
 
-    def on_progress(stream: Stream, chunk, bytes_remaining):
-        total_size = stream.filesize
-        bytes_down = total_size - bytes_remaining
-        porcent = bytes_down / total_size * 100
-
-        label_progress.value = f"{round(porcent,2)}%"
-        progress.value = round(porcent,2) / 100
-
-        if(round(porcent,2) == 100):
-            # label_progress.value = "0%"
-            # progress.value = 0
-            # listActivity.controls = []
-            estado.visible = False
-
-        page.update()
-
     def AppEndListActivity(video: YouTube):
         listActivity.controls.append(
             ft.Row(controls=[
                 ft.Image(video.thumbnail_url, width=240),
                 ft.Column(controls=[
                     ft.Text(video.title, size=30),
-                    ft.Row(
-                        controls=[
-                            progress,
-                            label_progress
-                        ],
-                        alignment=ft.MainAxisAlignment.SPACE_EVENLY
-                    ),
                 ])
             ])
         )
+
+    def on_progress(stream: Stream, chunk, bytes_remaining):
+        total_filesize = stream.filesize
+        bytes_dowloaded = total_filesize - bytes_remaining
+        porcent = bytes_dowloaded / total_filesize * 100 
+
+        progress_bar.value = round(porcent) / 100
+        progress_label.value = f"{round(porcent)}%"
+
+        page.update()
+
+    def on_complete(data, text: str):
+        del ListActivities[0]
+        del listActivity.controls[0]
+
+        progress_bar.value = 0
+        progress_label.value = "0%"
+
+        AdminListActivities(True,textfield_PATH_FILE.value)
+
+    def AdminListActivities(stream, path: str = ""):
+        page.update()
+        if stream == True:
+            if len(ListActivities) > 0:
+                Download(ListActivities[0], path)
+                estado.visible = False
+                if(len(ListActivities) != 0):
+                    del ListActivities[0]
+                    del listActivity.controls[0]
+
+        else:
+            listDownOptions.controls = []
+            estado.visible = True
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
+
+            page.update()
+
+            ListActivities.append(stream)
+
+            if len(ListActivities) == 1:
+                Download(stream, path)
+
+        page.update()
 
     def Validacion(e):
         try:
@@ -123,7 +145,7 @@ def main(page: ft.Page):
                 yt = Playlist(textfield_URL.value)
                 Download_Playlist(yt)
             else:
-                yt = YouTube(textfield_URL.value, on_progress_callback=on_progress)
+                yt = YouTube(textfield_URL.value, on_complete_callback=on_complete, on_progress_callback=on_progress)
                 DownOptions(yt.streams)
             
             estado.visible = False
@@ -142,21 +164,10 @@ def main(page: ft.Page):
             page.update()
 
     def Download(stream: Stream, path: str = ""):
-        video = YouTube(textfield_URL.value, on_progress_callback=on_progress)
-
-        AppEndListActivity(video)
-
-        estado.visible = True
-        textfield_URL.disabled = False
-        SearchButton.disabled = False
-
-        listDownOptions.controls = []
-        page.update()
-
         try:
             if(path != ""):
                 stream.download(output_path=path)
-            if(textfield_PATH_FILE.value == ""):
+            elif(textfield_PATH_FILE.value == ""):
                 stream.download(output_path=f"{os.path.expanduser('~')}\\Downloads")
             elif(textfield_PATH_FILE.value != ""):
                 stream.download(output_path=textfield_PATH_FILE.value)    
@@ -170,19 +181,19 @@ def main(page: ft.Page):
             page.update()
             return -1
         except Exception as err:
-            page.open(Show_Alert_ERROR(err))
-            textfield_URL.disabled = False
-            SearchButton.disabled = False
-            estado.value = False
-            listActivity.controls.clear()
-            page.update()
+                page.open(Show_Alert_ERROR(err))
+                textfield_URL.disabled = False
+                SearchButton.disabled = False
+                estado.value = False
+                listActivity.controls.clear()
+                page.update()
 
     def Download_Playlist(playlist: Playlist):
         try:
             os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
         except FileExistsError as err:
             page.open(Show_Alert_ERROR(f"La carpeta {playlist.title} ya está creada, por favor eliminela y vuelva a intentarlo"))
-            listActivity.controls.clear()
+            # listActivity.controls.clear()
             textfield_URL.disabled = False
             SearchButton.disabled = False
             estado.visible = False
@@ -206,10 +217,11 @@ def main(page: ft.Page):
             return -1
 
         estado.visible = True
+        progressRing.visible = False
 
         for video in playlist.videos:
-            video.register_on_progress_callback(on_progress)
             AppEndListActivity(video)
+            video.register_on_progress_callback(on_progress)
             page.update()
 
             try:
@@ -226,10 +238,15 @@ def main(page: ft.Page):
                 estado.value = False
                 page.update()
 
+            progress_bar.value = 0
+            progress_label.value = "0%"
+
             listActivity.controls = []
             page.update()
 
     def DownOptions(streams):
+        AppEndListActivity(YouTube(textfield_URL.value))
+
         listDownOptions.controls.append(
             ft.DataTable(
                 columns=[
@@ -245,28 +262,28 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text(streams.get_highest_resolution().resolution)),
                         ft.DataCell(ft.Text(streams.get_highest_resolution().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_highest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams.get_highest_resolution(),"",))))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(streams.get_highest_resolution()))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().resolution)),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams.get_lowest_resolution(),"",))))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(streams.get_lowest_resolution()))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams[floor(len(streams.filter(type="video")) / 2)],"",))))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(streams[floor(len(streams.filter(type="video")) / 2)]))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Audio")),
                         ft.DataCell(ft.Text(streams.get_audio_only().abr)),
                         ft.DataCell(ft.Text(streams.get_audio_only().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_audio_only().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AddTaskThread(Thread(target=Download, args=(streams.get_audio_only(),"",))))),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(streams.get_audio_only()))),
                     ]),
                 ],
                 width=800,
@@ -282,7 +299,7 @@ def main(page: ft.Page):
 
     page.appbar = ft.AppBar(
         title=title,
-        leading=ft.Container(content=ft.Image("./src/source/python.png",width=180),padding=20),
+        leading=ft.Container(content=ft.Image("./src/source/python.png",width=120),padding=20),
         leading_width = 100,
         center_title=False,
         toolbar_height=75,
@@ -308,6 +325,10 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER
             ),
+            ft.Row([
+                progress_bar,
+                progress_label
+            ],alignment=ft.MainAxisAlignment.CENTER),
             listDownOptions,
             listActivity,
     )
