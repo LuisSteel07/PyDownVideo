@@ -307,7 +307,7 @@ def main(page: ft.Page):
 
     page.appbar = ft.AppBar(
         title=title,
-        leading=ft.Container(content=ft.Image("./src/source/python.png",width=120),padding=20),
+        leading=ft.Container(content=ft.Image("./python.png",width=120),padding=20),
         leading_width = 100,
         center_title=False,
         toolbar_height=75,
