@@ -5,6 +5,8 @@ from urllib import error
 from pytube import YouTube, Stream, Playlist, exceptions
 from DownActivity import DownActivity
 
+DownActivitiesList = list()
+
 def main(page: ft.Page):
     page.title = "PyDownVideo"
     page.horizontal_alignment = ft.MainAxisAlignment.CENTER
@@ -41,6 +43,7 @@ def main(page: ft.Page):
             scroll=ft.ScrollMode.ALWAYS,
             controls=[]
         )
+
     listDownOptions = ft.Row(
             scroll=ft.ScrollMode.ALWAYS,
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
@@ -54,8 +57,6 @@ def main(page: ft.Page):
             ft.Text("Buscando Archivo..."),
         ]),
     ], alignment=ft.MainAxisAlignment.CENTER)
-
-    ListActivities = list()
 
     def Change_Theme(e):
         if(page.theme_mode == ft.ThemeMode.DARK):
@@ -101,7 +102,7 @@ def main(page: ft.Page):
         page.update()
 
     def on_complete(data, path: str):
-        del ListActivities[0]
+        del DownActivitiesList[0]
         del listActivity.controls[0]
 
         progress_bar.value = 0
@@ -112,8 +113,8 @@ def main(page: ft.Page):
     def AdminListActivities(stream, path: str = ""):
         page.update()
         if stream == True:
-            if len(ListActivities) > 0:
-                Download(ListActivities[0])
+            if len(DownActivitiesList) > 0:
+                Download(DownActivitiesList[0].getStream(), DownActivitiesList[0].path)
                 estado.visible = False
 
         else:
@@ -124,10 +125,10 @@ def main(page: ft.Page):
 
             page.update()
 
-            ListActivities.append(stream)
+            DownActivitiesList.append(DownActivity(stream,path))
 
-            if len(ListActivities) == 1:
-                Download(stream, path)
+            if len(DownActivitiesList) == 1:
+                Download(DownActivitiesList[0].getStream(), DownActivitiesList[0].path)
 
         page.update()
 
@@ -163,11 +164,11 @@ def main(page: ft.Page):
     def Download(stream: Stream, path: str = ""):
         try:
             if(path != ""):
-                stream.download(output_path=path)
+                stream.download(path)
             elif(textfield_PATH_FILE.value == ""):
-                stream.download(output_path=f"{os.path.expanduser('~')}\\Downloads")
+                stream.download(f"{os.path.expanduser('~')}\\Downloads")
             elif(textfield_PATH_FILE.value != ""):
-                stream.download(output_path=textfield_PATH_FILE.value)    
+                stream.download(textfield_PATH_FILE.value)    
         except error.URLError as err:
             page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
             listActivity.controls.clear()
@@ -178,14 +179,47 @@ def main(page: ft.Page):
             page.update()
             return -1
         except Exception as err:
-                page.open(Show_Alert_ERROR(err))
-                textfield_URL.disabled = False
-                SearchButton.disabled = False
-                estado.value = False
-                listActivity.controls.clear()
-                page.update()
+            page.open(Show_Alert_ERROR(err))
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
+            estado.value = False
+            listActivity.controls.clear()
+            page.update()
 
     def Download_Playlist(playlist: Playlist):
+        playlist_path = ""
+
+        try:
+            os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
+            playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}"
+        except FileExistsError as err:
+            page.open(Show_Alert_ERROR(f"La carpeta {playlist.title} ya está creada, eliminela y luego inserte de nuevo la playlist"))
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
+            
+            if len(DownActivitiesList) == 0:
+                estado.visible = False
+            page.remove(progressRing)            
+            return -1
+        except error.URLError as err:
+            page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
+            
+            if len(DownActivitiesList) == 0:
+                estado.visible = False
+            page.remove(progressRing)            
+            return -1
+        except Exception as err:
+            page.open(Show_Alert_ERROR(err))
+            textfield_URL.disabled = False
+            SearchButton.disabled = False
+            
+            if len(DownActivitiesList) == 0:
+                estado.visible = False
+            page.remove(progressRing)            
+            return -1
+
         estado.visible = True
         progressRing.visible = False
 
@@ -196,9 +230,9 @@ def main(page: ft.Page):
                 video.register_on_complete_callback(on_complete)
 
                 if(Hight_Resolution.value == True and textfield_PATH_FILE.value == ""):
-                    AdminListActivities(video.streams.get_highest_resolution())
+                    AdminListActivities(video.streams.get_highest_resolution(), playlist_path)
                 elif(Hight_Resolution.value == False and textfield_PATH_FILE.value == ""):
-                    AdminListActivities(video.streams.get_lowest_resolution())
+                    AdminListActivities(video.streams.get_lowest_resolution(), playlist_path)
                 elif(Hight_Resolution.value == True and textfield_PATH_FILE.value != ""):
                     AdminListActivities(video.streams.get_highest_resolution(),textfield_PATH_FILE.value)
                 elif(Hight_Resolution.value == False and textfield_PATH_FILE.value != ""):
