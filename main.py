@@ -21,7 +21,6 @@ def main(page: ft.Page):
         progress_label
     ])
 
-    Hight_Resolution = ft.Checkbox(label="Descargar Máxima Calidad", tooltip="Al activarlo se descargarán los videos de Playlist en Alta Calidad (Calidad base es 480p)", value=False)
     ThemeIcon = ft.PopupMenuItem("Tema",icon=ft.icons.LIGHT_MODE,on_click= lambda e: Change_Theme(e))
     title = ft.Text(value="PyDownVideo",size=30,weight=ft.FontWeight.BOLD)
 
@@ -45,7 +44,6 @@ def main(page: ft.Page):
         )
 
     listDownOptions = ft.Row(
-            scroll=ft.ScrollMode.ALWAYS,
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             controls=[]
         )
@@ -108,6 +106,8 @@ def main(page: ft.Page):
         progress_bar.value = 0
         progress_label.value = "0%"
 
+        page.update()
+
         AdminListActivities(True)
 
     def AdminListActivities(stream, path: str = ""):
@@ -115,7 +115,11 @@ def main(page: ft.Page):
         if stream == True:
             if len(DownActivitiesList) > 0:
                 Download(DownActivitiesList[0].getStream(), DownActivitiesList[0].path)
+            if len(DownActivitiesList) == 0:
                 estado.visible = False
+                textfield_URL.disabled = False
+                SearchButton.disabled = False
+                page.update()
 
         else:
             listDownOptions.controls = []
@@ -141,7 +145,7 @@ def main(page: ft.Page):
 
             if("list" in textfield_URL.value):
                 yt = Playlist(textfield_URL.value)
-                Download_Playlist(yt)
+                DownOptionsPlaylist(yt)
             else:
                 yt = YouTube(textfield_URL.value, on_complete_callback=on_complete, on_progress_callback=on_progress)
                 DownOptions(yt.streams)
@@ -164,10 +168,16 @@ def main(page: ft.Page):
     def Download(stream: Stream, path: str = ""):
         try:
             if(path != ""):
+                listActivity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
+                page.update()
                 stream.download(path)
             elif(textfield_PATH_FILE.value == ""):
+                listActivity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
+                page.update()
                 stream.download(f"{os.path.expanduser('~')}\\Downloads")
             elif(textfield_PATH_FILE.value != ""):
+                listActivity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
+                page.update()
                 stream.download(textfield_PATH_FILE.value)    
         except error.URLError as err:
             page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
@@ -186,8 +196,13 @@ def main(page: ft.Page):
             listActivity.controls.clear()
             page.update()
 
-    def Download_Playlist(playlist: Playlist):
+    def Download_Playlist(playlist: Playlist, type_content: str):
         playlist_path = ""
+        listDownOptions.controls = []
+        estado.visible = True
+        progressRing.visible = False
+
+        page.update()
 
         try:
             os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
@@ -220,24 +235,27 @@ def main(page: ft.Page):
             page.remove(progressRing)            
             return -1
 
-        estado.visible = True
-        progressRing.visible = False
-
         try:
             for video in playlist.videos:
                 AppEndListActivity(video)
                 video.register_on_progress_callback(on_progress)
                 video.register_on_complete_callback(on_complete)
 
-                if(Hight_Resolution.value == True and textfield_PATH_FILE.value == ""):
-                    AdminListActivities(video.streams.get_highest_resolution(), playlist_path)
-                elif(Hight_Resolution.value == False and textfield_PATH_FILE.value == ""):
-                    AdminListActivities(video.streams.get_lowest_resolution(), playlist_path)
-                elif(Hight_Resolution.value == True and textfield_PATH_FILE.value != ""):
-                    AdminListActivities(video.streams.get_highest_resolution(),textfield_PATH_FILE.value)
-                elif(Hight_Resolution.value == False and textfield_PATH_FILE.value != ""):
-                    AdminListActivities(video.streams.get_lowest_resolution(),textfield_PATH_FILE.value)
-
+                if(textfield_PATH_FILE.value == ""):
+                    if(type_content == "higt"):
+                        DownActivitiesList.append(DownActivity(video.streams.get_highest_resolution(),playlist_path))
+                    elif(type_content == "low"):
+                        DownActivitiesList.append(DownActivity(video.streams.get_lowest_resolution(),playlist_path))
+                    elif(type_content == "audio"):
+                        DownActivitiesList.append(DownActivity(video.streams.get_audio_only(),playlist_path))
+                elif(textfield_PATH_FILE.value != ""):
+                    if(type_content == "higt"):
+                        DownActivitiesList.append(DownActivity(video.streams.get_highest_resolution(),textfield_PATH_FILE.value))
+                    elif(type_content == "low"):
+                        DownActivitiesList.append(DownActivity(video.streams.get_lowest_resolution(),textfield_PATH_FILE.value))
+                    elif(type_content == "audio"):
+                        DownActivitiesList.append(DownActivity(video.streams.get_audio_only(),textfield_PATH_FILE.value))
+                
                 page.update()
         except Exception as err:
             page.open(Show_Alert_ERROR(err))
@@ -247,6 +265,9 @@ def main(page: ft.Page):
             estado.visible = False
             page.update()
             return -1
+
+        if textfield_PATH_FILE.value == "": AdminListActivities(True, playlist_path)
+        else: AdminListActivities(True)
 
         textfield_URL.disabled = False
         SearchButton.disabled = False
@@ -295,15 +316,43 @@ def main(page: ft.Page):
                     ]),
                 ],
                 width=800,
-                heading_row_color=ft.colors.GREY_800,
             )
         )
         
         page.remove(progressRing)
         page.update()
 
+    def DownOptionsPlaylist(playlist: Playlist):
+        listDownOptions.controls.append(
+            ft.DataTable(
+                columns=[
+                    ft.DataColumn(ft.Text("Tipo")),
+                    ft.DataColumn(ft.Text("Calidad")),
+                    ft.DataColumn(ft.Text("Acción"))
+                ],
+                rows=[
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Video")),
+                        ft.DataCell(ft.Text("Alto")),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download_Playlist(playlist, "higt"))),
+                    ]),
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Video")),
+                        ft.DataCell(ft.Text("Bajo")),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download_Playlist(playlist, "low"))),
+                    ]),
+                    ft.DataRow([
+                        ft.DataCell(ft.Text("Audio")),
+                        ft.DataCell(ft.Text("Alto")),
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: Download_Playlist(playlist, "audio"))),
+                    ]),
+                ]
+            )
+        )
+        page.update()
+    
     SearchButton = ft.IconButton(icon=ft.icons.SEARCH, on_click=Validacion)
-    textfield_URL = ft.TextField(label="URL", width=600)
+    textfield_URL = ft.TextField(label="URL", width=600, hint_text="Escriba la URL del video aquí", on_submit=Validacion)
 
     page.appbar = ft.AppBar(
         title=title,
@@ -317,7 +366,6 @@ def main(page: ft.Page):
                     items=[
                         ft.PopupMenuItem(text="Ruta de Descarga", on_click= lambda e: page.open(config_alert)),
                         ThemeIcon,
-                        ft.PopupMenuItem(text="Opciones de Resolución:", content=Hight_Resolution)
                     ]
                 )
             )
@@ -333,10 +381,6 @@ def main(page: ft.Page):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER
             ),
-            ft.Row([
-                progress_bar,
-                progress_label
-            ],alignment=ft.MainAxisAlignment.CENTER),
             listDownOptions,
             listActivity,
     )
