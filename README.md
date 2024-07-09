@@ -1,8 +1,7 @@
-# Proyecto PyDownVideo (Versión 1.6.8)
+# Proyecto PyDownVideo (Versión 0.5.4)
 
 <div style="display: flex; justify-content: center; gap:100px;">
-    <img src="./src/source/python.svg" alt="Python Lenguage Logo" width="120"/>
-    <img src="./src/source/python.svg" alt="Python Lenguage Logo" width="120"/>
+    <img src="./src/source/python.png" alt="PyDownVideo Logo" width="120"/>
 </div>
 
 
