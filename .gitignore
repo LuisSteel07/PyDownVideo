@@ -1,9 +1,9 @@
 # Python Caché
-__pycache__/
+./__pycache__/
 
 # Others
 main.spec*
 
 # Build and Pack
-build/
-dist/
+./build/
+./dist/
