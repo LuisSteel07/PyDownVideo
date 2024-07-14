@@ -4,7 +4,7 @@
   "description": "Programa para descargar videos de youtube de manera rápida y eficiente",
   "main": "main.py",
   "scripts": {
-    "run": "flet main.py",
+    "dev": "flet main.py",
     "build": "flet pack main.py -i python.png"
   },
   "author": "Luisdel Fonseca Tejeda",

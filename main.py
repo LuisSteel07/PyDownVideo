@@ -111,14 +111,15 @@ def main(page: ft.Page):
         AdminListActivities(True)
 
     def AdminListActivities(stream, path: str = ""):
+        estado.visible = False
+        textfield_URL.disabled = False
+        SearchButton.disabled = False
         page.update()
         if stream == True:
             if len(DownActivitiesList) > 0:
                 Download(DownActivitiesList[0].getStream(), DownActivitiesList[0].path)
             if len(DownActivitiesList) == 0:
                 estado.visible = False
-                textfield_URL.disabled = False
-                SearchButton.disabled = False
                 page.update()
 
         else:
@@ -268,10 +269,6 @@ def main(page: ft.Page):
 
         if textfield_PATH_FILE.value == "": AdminListActivities(True, playlist_path)
         else: AdminListActivities(True)
-
-        textfield_URL.disabled = False
-        SearchButton.disabled = False
-        page.update()
 
     def DownOptions(streams):
         AppEndListActivity(YouTube(textfield_URL.value))
