@@ -8,3 +8,9 @@ __pycache__/
 # Build and Pack
 build/
 dist/
+
+# IDE PyCharm configuration
+.idea/
+
+#Ignore venv
+.venv/

@@ -22,8 +22,8 @@ Este proyecto trata sobre la creación de un programa escrito en Python con el p
 Este clase posee dos atributos principales:
 ===========================================
 
-- yt se encarga de obtener y crear un objeto YouTube a partir de este y poder obtener el title y thumbnail de el video correspondiente a descargar
-- Posee un metodo llamado ShowActivity que retorna un ft.Card() donde muestra el titulo y miniatura de el video a descargar
+- stream se encarga de almacenar el stream que se va a descargar
+- path guardará la ruta donde se descargará el video 
 
 # Componentes Importantes
 
@@ -33,35 +33,25 @@ Este componente nos servira para colocar la URL del video que necesitemos descar
 ## SearchButton
 Este ft.IconButton al presionarlo verificará que esta URL es válida, después nos mostrará una instancia de DownActivity.ShowActivity() y ejecutará la función OptionsDown() encargada de listar las posibles formas de descarga que pueda desear.
 
-## label_progress & progress
-Ambos componentes necesarios para mostrar el porcentaje de descarga que presenta el archivo
+## progress_bar & progress_label
+Ambos componentes necesarios para mostrar el porcentaje de descarga que presenta el archivo. Estos se insertan dinámicamente en los elementos que se están descargando
 
 # Funciones Importantes 
 
 ## on_progress
 Función usada de callback para:
 ```python
-yt = YouTube(textfield_URL.value, on_progress_callback=on_progress)
+yt = YouTube(textfield_URL.value,on_progress_callback=on_progress)
 ```
 Donde cada vez que se descargue un trozo del archivo se ejecutara esta porción de código:
 ```python
     def on_progress(stream: Stream, chunk, bytes_remaining):
-        total_size = stream.filesize
-        bytes_down = total_size - bytes_remaining
-        porcent = bytes_down / total_size * 100
+        total_filesize = stream.filesize
+        bytes_dowloaded = total_filesize - bytes_remaining
+        porcent = bytes_dowloaded / total_filesize * 100 
 
-        label_progress.value = f"{round(porcent,2)}%"
-        progress.value = round(porcent,2) / 100
-
-        if(round(porcent,2) == 100):
-            label_progress.value = "0%"
-            progress.value = 0
-            listActivity.controls = []
-            estado.value = "Archivo Descargado"
-            estado.color = ft.colors.GREEN
-
-            textfield_URL.disabled = False
-            SearchButton.disabled = False
+        progress_bar.value = round(porcent) / 100
+        progress_label.value = f"{round(porcent)}%"
 
         page.update()
 ```
