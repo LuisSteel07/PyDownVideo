@@ -2,10 +2,10 @@ import flet as ft
 import os
 from math import floor
 from urllib import error
-from pytube import YouTube, Stream, Playlist, exceptions
+from pytubefix import YouTube, Stream, Playlist, exceptions
 from DownActivity import DownActivity
 
-DownActivitiesList = list()
+DownActivitiesList: list[DownActivity] = []
 
 
 def main(page: ft.Page):
@@ -17,19 +17,20 @@ def main(page: ft.Page):
     progress_bar = ft.ProgressBar(width=400, value=0)
     progress_label = ft.Text("0%")
 
-    theme_icon = ft.PopupMenuItem("Tema", icon=ft.icons.LIGHT_MODE, on_click=lambda e: Change_Theme(e))
+    theme_icon = ft.PopupMenuItem("Tema", icon=ft.icons.LIGHT_MODE, on_click=lambda e: change_theme(e))
     title = ft.Text(value="PyDownVideo", size=30, weight=ft.FontWeight.BOLD)
 
     estado = ft.ProgressRing(visible=False)
 
-    textfield_PATH_FILE = ft.TextField(label="Directorio", width=600,
-                                       tooltip="Coloque un directorio donde desea que se guarde el video/audio (Predeterminado es Download)")
+    textfield_path_file = ft.TextField(label="Directorio", width=600,
+                                       tooltip="Coloque un directorio donde desea que se guarde el video/audio ("
+                                               "Predeterminado es Download)")
 
     config_alert = ft.AlertDialog(
         modal=True,
         adaptive=True,
         title=ft.Text("Establecer Ruta de Descarga:"),
-        content=textfield_PATH_FILE,
+        content=textfield_path_file,
         actions=[
             ft.TextButton("Cerrar", on_click=lambda e: page.close(config_alert)),
         ],
@@ -44,7 +45,8 @@ def main(page: ft.Page):
         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         controls=[]
     )
-    progressRing = ft.Row([
+
+    progress_ring = ft.Row([
         ft.Column([
             ft.Row([
                 ft.ProgressRing(),
@@ -53,7 +55,7 @@ def main(page: ft.Page):
         ]),
     ], alignment=ft.MainAxisAlignment.CENTER)
 
-    def Change_Theme(e):
+    def change_theme(e):
         if page.theme_mode == ft.ThemeMode.DARK:
             page.theme_mode = ft.ThemeMode.LIGHT
             theme_icon.icon = ft.icons.DARK_MODE
@@ -63,7 +65,7 @@ def main(page: ft.Page):
 
         page.update()
 
-    def Show_Alert_ERROR(err) -> ft.AlertDialog:
+    def show_alert_error(err) -> ft.AlertDialog:
         alert = ft.AlertDialog(
             modal=True,
             adaptive=True,
@@ -76,23 +78,12 @@ def main(page: ft.Page):
 
         return alert
 
-    def AppEndListActivity(video: YouTube):
-        list_activity.controls.append(
-            ft.Row(controls=[
-                ft.Image(video.thumbnail_url, width=240),
-                ft.Column(controls=[
-                    ft.Text(video.title, size=30),
-                ])
-            ])
-        )
-
     def on_progress(stream: Stream, chunk, bytes_remaining):
         total_filesize = stream.filesize
         bytes_dowloaded = total_filesize - bytes_remaining
         porcent = bytes_dowloaded / total_filesize * 100
 
-        progress_bar.value = round(porcent) / 100
-        progress_label.value = f"{round(porcent)}%"
+        DownActivitiesList[0].set_progress(round(porcent))
 
         page.update()
 
@@ -105,16 +96,16 @@ def main(page: ft.Page):
 
         page.update()
 
-        AdminListActivities(True)
+        admin_list_activities(next_process=True)
 
-    def AdminListActivities(stream, path: str = ""):
+    def admin_list_activities(stream: Stream = None, path: str = "", next_process: bool = False):
         estado.visible = False
         textfield_url.disabled = False
         search_button.disabled = False
         page.update()
-        if stream == True:
+        if next_process:
             if len(DownActivitiesList) > 0:
-                Download(DownActivitiesList[0].getStream(), DownActivitiesList[0].path)
+                download(DownActivitiesList[0].stream[0], DownActivitiesList[0].path)
             if len(DownActivitiesList) == 0:
                 estado.visible = False
                 page.update()
@@ -122,63 +113,60 @@ def main(page: ft.Page):
         else:
             list_down_options.controls = []
             estado.visible = True
-            textfield_url.disabled = False
-            search_button.disabled = False
+            page.update()
+            activity = DownActivity(YouTube(textfield_url.value), stream, path)
+            list_activity.controls.append(activity.show_activity())
 
             page.update()
-
-            DownActivitiesList.append(DownActivity(stream, path))
-
+            DownActivitiesList.append(activity)
             if len(DownActivitiesList) == 1:
-                Download(DownActivitiesList[0].getStream(), DownActivitiesList[0].path)
+                download(DownActivitiesList[0].stream[0], DownActivitiesList[0].path)
 
         page.update()
 
-    def Validacion(e):
+    def validacion(e):
         try:
             search_button.disabled = True
             textfield_url.disabled = True
-            page.add(progressRing)
+            page.add(progress_ring)
             page.update()
 
             if "list" in textfield_url.value:
                 yt = Playlist(textfield_url.value)
-                DownOptionsPlaylist(yt)
+                down_options_playlist(yt)
             else:
                 yt = YouTube(textfield_url.value, on_complete_callback=on_complete, on_progress_callback=on_progress)
-                DownOptions(yt.streams)
+                down_options(yt.streams)
 
             estado.visible = False
             page.update()
         except exceptions.RegexMatchError:
-            page.open(Show_Alert_ERROR("URL Inválida"))
+            page.open(show_alert_error("URL Inválida"))
             search_button.disabled = False
             textfield_url.disabled = False
-            page.remove(progressRing)
+            page.remove(progress_ring)
             page.update()
         except Exception as err:
-            page.open(Show_Alert_ERROR(err))
+            page.open(show_alert_error(err))
             search_button.disabled = False
             textfield_url.disabled = False
-            page.remove(progressRing)
+            page.remove(progress_ring)
             page.update()
 
-    def Download(stream: Stream, path: str = ""):
+    def download(stream: Stream, path: str = ""):
         try:
             if path != "":
-                list_activity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
+                # list_activity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
                 page.update()
                 stream.download(path)
-            elif textfield_PATH_FILE.value == "":
-                list_activity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
+            elif textfield_path_file.value == "":
                 page.update()
-                stream.download(f"{os.path.expanduser('~')}\\Downloads")
-            elif textfield_PATH_FILE.value != "":
-                list_activity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
+                stream.download(f"{os.path.expanduser('~')}\\Downloads\\")
+            elif textfield_path_file.value != "":
                 page.update()
-                stream.download(textfield_PATH_FILE.value)
+                stream.download(textfield_path_file.value)
         except error.URLError:
-            page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
+            page.open(show_alert_error("Revise su red, podría estar desconectado..."))
             list_activity.controls.clear()
             textfield_url.disabled = False
             search_button.disabled = False
@@ -187,18 +175,18 @@ def main(page: ft.Page):
             page.update()
             return -1
         except Exception as err:
-            page.open(Show_Alert_ERROR(err))
+            page.open(show_alert_error(f"{type(err)} : {err}"))
             textfield_url.disabled = False
             search_button.disabled = False
             estado.value = False
             list_activity.controls.clear()
             page.update()
 
-    def Download_Playlist(playlist: Playlist, type_content: str):
-        playlist_path = ""
+    def download_playlist(playlist: Playlist, type_content: str):
         list_down_options.controls = []
         estado.visible = True
-        progressRing.visible = False
+        progress_ring.visible = False
+        playlist_path = ""
 
         page.update()
 
@@ -206,76 +194,87 @@ def main(page: ft.Page):
             os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
             playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}"
         except FileExistsError:
-            page.open(Show_Alert_ERROR(
+            page.open(show_alert_error(
                 f"La carpeta {playlist.title} ya está creada, eliminela y luego inserte de nuevo la playlist"))
             textfield_url.disabled = False
             search_button.disabled = False
 
             if len(DownActivitiesList) == 0:
                 estado.visible = False
-            page.remove(progressRing)
-            return -1
+            page.remove(progress_ring)
+
         except error.URLError:
-            page.open(Show_Alert_ERROR("Revise su red, podría estar desconectado..."))
+            page.open(show_alert_error("Revise su red, podría estar desconectado..."))
             textfield_url.disabled = False
             search_button.disabled = False
 
             if len(DownActivitiesList) == 0:
                 estado.visible = False
-            page.remove(progressRing)
-            return -1
+            page.remove(progress_ring)
+
         except Exception as err:
-            page.open(Show_Alert_ERROR(err))
+            page.open(show_alert_error(err))
             textfield_url.disabled = False
             search_button.disabled = False
 
             if len(DownActivitiesList) == 0:
                 estado.visible = False
-            page.remove(progressRing)
-            return -1
+            page.remove(progress_ring)
 
         try:
             for video in playlist.videos:
-                AppEndListActivity(video)
                 video.register_on_progress_callback(on_progress)
                 video.register_on_complete_callback(on_complete)
 
-                if textfield_PATH_FILE.value == "":
+                if textfield_path_file.value == "":
                     if type_content == "higt":
-                        DownActivitiesList.append(DownActivity(video.streams.get_highest_resolution(), playlist_path))
+                        activity = DownActivity(video, video.streams.get_highest_resolution(), playlist_path)
+                        DownActivitiesList.append(
+                            DownActivity(video, video.streams.get_highest_resolution(), playlist_path))
+                        list_activity.controls.append(activity.show_activity())
+
                     elif type_content == "low":
-                        DownActivitiesList.append(DownActivity(video.streams.get_lowest_resolution(), playlist_path))
+                        activity = DownActivity(video, video.streams.get_lowest_resolution(), playlist_path)
+                        DownActivitiesList.append(
+                            DownActivity(video, video.streams.get_lowest_resolution(), playlist_path))
+                        list_activity.controls.append(activity.show_activity())
                     elif type_content == "audio":
-                        DownActivitiesList.append(DownActivity(video.streams.get_audio_only(), playlist_path))
-                elif textfield_PATH_FILE.value != "":
+                        activity = DownActivity(video, video.streams.get_audio_only(), playlist_path)
+                        DownActivitiesList.append(DownActivity(video, video.streams.get_audio_only(), playlist_path))
+                        list_activity.controls.append(activity.show_activity())
+                elif textfield_path_file.value != "":
                     if type_content == "higt":
+                        activity = DownActivity(video, video.streams.get_highest_resolution(),
+                                                textfield_path_file.value)
                         DownActivitiesList.append(
-                            DownActivity(video.streams.get_highest_resolution(), textfield_PATH_FILE.value))
+                            DownActivity(video, video.streams.get_highest_resolution(), textfield_path_file.value))
+                        list_activity.controls.append(activity.show_activity())
                     elif type_content == "low":
+                        activity = DownActivity(video, video.streams.get_lowest_resolution(), textfield_path_file.value)
                         DownActivitiesList.append(
-                            DownActivity(video.streams.get_lowest_resolution(), textfield_PATH_FILE.value))
+                            DownActivity(video, video.streams.get_lowest_resolution(), textfield_path_file.value))
+                        list_activity.controls.append(activity.show_activity())
                     elif type_content == "audio":
+                        activity = DownActivity(video, video.streams.get_audio_only(), textfield_path_file.value)
                         DownActivitiesList.append(
-                            DownActivity(video.streams.get_audio_only(), textfield_PATH_FILE.value))
+                            DownActivity(video, video.streams.get_audio_only(), textfield_path_file.value))
+                        list_activity.controls.append(activity.show_activity())
 
                 page.update()
         except Exception as err:
-            page.open(Show_Alert_ERROR(err))
+            page.open(show_alert_error(err))
             list_activity.controls.clear()
             textfield_url.disabled = False
             search_button.disabled = False
             estado.visible = False
             page.update()
-            return -1
 
-        if textfield_PATH_FILE.value == "":
-            AdminListActivities(True, playlist_path)
+        if textfield_path_file.value == "":
+            admin_list_activities(path=playlist_path, next_process=True)
         else:
-            AdminListActivities(True)
+            admin_list_activities(next_process=True)
 
-    def DownOptions(streams):
-        AppEndListActivity(YouTube(textfield_url.value))
-
+    def down_options(streams):
         list_down_options.controls.append(
             ft.DataTable(
                 columns=[
@@ -291,7 +290,7 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text(streams.get_highest_resolution().resolution)),
                         ft.DataCell(ft.Text(streams.get_highest_resolution().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_highest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: admin_list_activities(
                             streams.get_highest_resolution()))),
                     ]),
                     ft.DataRow([
@@ -299,7 +298,7 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().resolution)),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_lowest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: admin_list_activities(
                             streams.get_lowest_resolution()))),
                     ]),
                     ft.DataRow([
@@ -307,7 +306,7 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
                         ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: AdminListActivities(
+                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: admin_list_activities(
                             streams[floor(len(streams.filter(type="video")) / 2)]))),
                     ]),
                     ft.DataRow([
@@ -316,17 +315,17 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text(streams.get_audio_only().filesize_mb)),
                         ft.DataCell(ft.Text(streams.get_audio_only().mime_type)),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: AdminListActivities(streams.get_audio_only()))),
+                                                  on_click=lambda e: admin_list_activities(streams.get_audio_only()))),
                     ]),
                 ],
                 width=800,
             )
         )
 
-        page.remove(progressRing)
+        page.remove(progress_ring)
         page.update()
 
-    def DownOptionsPlaylist(playlist: Playlist):
+    def down_options_playlist(playlist: Playlist):
         list_down_options.controls.append(
             ft.DataTable(
                 columns=[
@@ -339,28 +338,28 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text("Alto")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: Download_Playlist(playlist, "higt"))),
+                                                  on_click=lambda e: download_playlist(playlist, "higt"))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text("Bao")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: Download_Playlist(playlist, "low"))),
+                                                  on_click=lambda e: download_playlist(playlist, "low"))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Audio")),
                         ft.DataCell(ft.Text("Alto")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: Download_Playlist(playlist, "audio"))),
+                                                  on_click=lambda e: download_playlist(playlist, "audio"))),
                     ]),
                 ]
             )
         )
         page.update()
 
-    search_button = ft.IconButton(icon=ft.icons.SEARCH, on_click=Validacion)
+    search_button = ft.IconButton(icon=ft.icons.SEARCH, on_click=validacion)
     textfield_url = ft.TextField(label="URL", width=600, hint_text="Escriba la URL del video aquí",
-                                 on_submit=Validacion)
+                                 on_submit=validacion)
 
     page.appbar = ft.AppBar(
         title=title,
