@@ -12,6 +12,7 @@ dist/
 
 # IDE PyCharm configuration
 .idea/
+.vscode/
 
 #Ignore venv
 .venv/
