@@ -4,6 +4,7 @@ __pycache__/
 # Others
 *.spec
 *.ico
+main.spec
 
 # Build and Pack
 build/

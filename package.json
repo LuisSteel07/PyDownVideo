@@ -5,7 +5,7 @@
   "main": "main.py",
   "scripts": {
     "dev": "flet main.py",
-    "build": "flet pack main.py -i python.png"
+    "build": "flet pack main.py -i python.ico"
   },
   "author": "Luisdel Fonseca Tejeda",
   "license": "ISC"
