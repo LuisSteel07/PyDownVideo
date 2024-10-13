@@ -148,6 +148,7 @@ def main(page: ft.Page):
             page.update()
         except Exception as err:
             page.open(show_alert_error(err))
+            print(type(err))
             search_button.disabled = False
             textfield_url.disabled = False
             page.remove(progress_ring)
@@ -191,8 +192,10 @@ def main(page: ft.Page):
         page.update()
 
         try:
-            os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}")
-            playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{playlist.title}"
+            carpet_name = (((((((((playlist.title.replace("/", "")).replace("\\", "")).replace(":", "")).replace("*", "")).replace("?", "")).replace("\"", "")).replace("<", "")).replace(">", "")).replace("|", "")).strip()
+            os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}")
+            playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
+            print(playlist_path)
         except FileExistsError:
             page.open(show_alert_error(
                 f"La carpeta {playlist.title} ya está creada, eliminela y luego inserte de nuevo la playlist"))
