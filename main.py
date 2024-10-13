@@ -14,9 +14,6 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.ALWAYS
     page.theme_mode = ft.ThemeMode.DARK
 
-    progress_bar = ft.ProgressBar(width=400, value=0)
-    progress_label = ft.Text("0%")
-
     theme_icon = ft.PopupMenuItem("Tema", icon=ft.icons.LIGHT_MODE, on_click=lambda e: change_theme(e))
     title = ft.Text(value="PyDownVideo", size=30, weight=ft.FontWeight.BOLD)
 
@@ -90,12 +87,7 @@ def main(page: ft.Page):
     def on_complete(data, path: str):
         del DownActivitiesList[0]
         del list_activity.controls[0]
-
-        progress_bar.value = 0
-        progress_label.value = "0%"
-
         page.update()
-
         admin_list_activities(next_process=True)
 
     def admin_list_activities(stream: Stream = None, path: str = "", next_process: bool = False):
