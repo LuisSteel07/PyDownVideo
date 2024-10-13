@@ -1,12 +1,13 @@
 {
   "name": "pydownvideo",
-  "version": "0.5.4",
+  "version": "0.6.2",
   "description": "Programa para descargar videos de youtube de manera rápida y eficiente",
   "main": "main.py",
   "scripts": {
     "dev": "flet main.py",
     "build": "flet pack main.py -i python.ico"
   },
-  "author": "Luisdel Fonseca Tejeda",
-  "license": "ISC"
+  "author": "luisSteel07",
+  "license": "CC0 1.0 Universal",
+  "repository": "https://github.com/LuisSteel07/PyDownVideo"
 }

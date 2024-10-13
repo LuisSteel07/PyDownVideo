@@ -157,14 +157,10 @@ def main(page: ft.Page):
     def download(stream: Stream, path: str = ""):
         try:
             if path != "":
-                # list_activity.controls[0].controls[1].controls.append(ft.Row([progress_bar, progress_label]))
-                page.update()
                 stream.download(path)
             elif textfield_path_file.value == "":
-                page.update()
                 stream.download(f"{os.path.expanduser('~')}\\Downloads\\")
             elif textfield_path_file.value != "":
-                page.update()
                 stream.download(textfield_path_file.value)
         except error.URLError:
             page.open(show_alert_error("Revise su red, podría estar desconectado..."))
@@ -230,7 +226,7 @@ def main(page: ft.Page):
                 video.register_on_complete_callback(on_complete)
 
                 if textfield_path_file.value == "":
-                    if type_content == "higt":
+                    if type_content == "hight":
                         activity = DownActivity(video, video.streams.get_highest_resolution(), playlist_path)
                         DownActivitiesList.append(
                             DownActivity(video, video.streams.get_highest_resolution(), playlist_path))
@@ -246,7 +242,7 @@ def main(page: ft.Page):
                         DownActivitiesList.append(DownActivity(video, video.streams.get_audio_only(), playlist_path))
                         list_activity.controls.append(activity.show_activity())
                 elif textfield_path_file.value != "":
-                    if type_content == "higt":
+                    if type_content == "hight":
                         activity = DownActivity(video, video.streams.get_highest_resolution(),
                                                 textfield_path_file.value)
                         DownActivitiesList.append(
@@ -341,11 +337,11 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text("Alto")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: download_playlist(playlist, "higt"))),
+                                                  on_click=lambda e: download_playlist(playlist, "hight"))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text("Bao")),
+                        ft.DataCell(ft.Text("Bajo")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
                                                   on_click=lambda e: download_playlist(playlist, "low"))),
                     ]),
