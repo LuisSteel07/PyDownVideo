@@ -2,8 +2,9 @@ import flet as ft
 import os
 from math import floor
 from urllib import error
-from pytubefix import YouTube, Stream, Playlist, exceptions
+from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery
 from DownActivity import DownActivity
+from DownOption import DownOption
 
 DownActivitiesList: list[DownActivity] = []
 
@@ -180,7 +181,9 @@ def main(page: ft.Page):
         page.update()
 
         try:
-            carpet_name = (((((((((playlist.title.replace("/", "")).replace("\\", "")).replace(":", "")).replace("*", "")).replace("?", "")).replace("\"", "")).replace("<", "")).replace(">", "")).replace("|", "")).strip()
+            carpet_name = (((((((((playlist.title.replace("/", "")).replace("\\", "")).replace(":", "")).replace("*",
+                                                                                                                 "")).replace(
+                "?", "")).replace("\"", "")).replace("<", "")).replace(">", "")).replace("|", "")).strip()
             os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}")
             playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
             print(playlist_path)
@@ -265,6 +268,12 @@ def main(page: ft.Page):
         else:
             admin_list_activities(next_process=True)
 
+    def create_rows(streams: StreamQuery) -> list[ft.DataRow]:
+        rows: list[ft.DataRow] = []
+        for stream in streams:
+            rows.append(DownOption(stream).show_option(admin_list_activities))
+        return rows
+
     def down_options(streams):
         list_down_options.controls.append(
             ft.DataTable(
@@ -272,43 +281,11 @@ def main(page: ft.Page):
                     ft.DataColumn(ft.Text("Tipo")),
                     ft.DataColumn(ft.Text("Calidad")),
                     ft.DataColumn(ft.Text("Tamaño")),
-                    ft.DataColumn(ft.Text("Mime_Type")),
+                    ft.DataColumn(ft.Text("Extensión")),
+                    ft.DataColumn(ft.Text("Progessive")),
                     ft.DataColumn(ft.Text("Acción")),
                 ],
-                rows=[
-                    ft.DataRow([
-                        ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams.get_highest_resolution().resolution)),
-                        ft.DataCell(ft.Text(streams.get_highest_resolution().filesize_mb)),
-                        ft.DataCell(ft.Text(streams.get_highest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: admin_list_activities(
-                            streams.get_highest_resolution()))),
-                    ]),
-                    ft.DataRow([
-                        ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams.get_lowest_resolution().resolution)),
-                        ft.DataCell(ft.Text(streams.get_lowest_resolution().filesize_mb)),
-                        ft.DataCell(ft.Text(streams.get_lowest_resolution().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: admin_list_activities(
-                            streams.get_lowest_resolution()))),
-                    ]),
-                    ft.DataRow([
-                        ft.DataCell(ft.Text("Video")),
-                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].resolution)),
-                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].filesize_mb)),
-                        ft.DataCell(ft.Text(streams[floor(len(streams.filter(type="video")) / 2)].mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD, on_click=lambda e: admin_list_activities(
-                            streams[floor(len(streams.filter(type="video")) / 2)]))),
-                    ]),
-                    ft.DataRow([
-                        ft.DataCell(ft.Text("Audio")),
-                        ft.DataCell(ft.Text(streams.get_audio_only().abr)),
-                        ft.DataCell(ft.Text(streams.get_audio_only().filesize_mb)),
-                        ft.DataCell(ft.Text(streams.get_audio_only().mime_type)),
-                        ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: admin_list_activities(streams.get_audio_only()))),
-                    ]),
-                ],
+                rows=create_rows(streams),
                 width=800,
             )
         )
