@@ -1,8 +1,7 @@
 import flet as ft
 import os
-from math import floor
 from urllib import error
-from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery
+from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Caption
 from DownActivity import DownActivity
 from DownOption import DownOption
 
@@ -52,6 +51,12 @@ def main(page: ft.Page):
             ft.Text("Buscando Archivo..."),
         ]),
     ], alignment=ft.MainAxisAlignment.CENTER)
+
+    captions_options = ft.Dropdown(
+        options=[],
+        width=100,
+        tooltip="Idioma del subtitulo a descargar"
+    )
 
     def change_theme(e):
         if page.theme_mode == ft.ThemeMode.DARK:
@@ -117,7 +122,7 @@ def main(page: ft.Page):
 
         page.update()
 
-    def validacion(e):
+    def validation(e):
         try:
             search_button.disabled = True
             textfield_url.disabled = True
@@ -148,13 +153,22 @@ def main(page: ft.Page):
             page.update()
 
     def download(stream: Stream, path: str = ""):
+        yt: YouTube = YouTube(textfield_url.value)
+
+        if path != "":
+            pass
+        elif textfield_path_file.value == "":
+            path = f"{os.path.expanduser('~')}\\Downloads\\"
+        elif textfield_path_file.value != "":
+            path = textfield_path_file.value
+
         try:
-            if path != "":
-                stream.download(path)
-            elif textfield_path_file.value == "":
-                stream.download(f"{os.path.expanduser('~')}\\Downloads\\")
-            elif textfield_path_file.value != "":
-                stream.download(textfield_path_file.value)
+            if captions_options.value is not None:
+                caption: Caption | None = yt.captions.get(f'{captions_options.value}')
+                if caption is not None:
+                    caption.download(title=yt.title, output_path=path)
+            stream.download(path)
+
         except error.URLError:
             page.open(show_alert_error("Revise su red, podría estar desconectado..."))
             list_activity.controls.clear()
@@ -186,36 +200,7 @@ def main(page: ft.Page):
                 "?", "")).replace("\"", "")).replace("<", "")).replace(">", "")).replace("|", "")).strip()
             os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}")
             playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
-            print(playlist_path)
-        except FileExistsError:
-            page.open(show_alert_error(
-                f"La carpeta {playlist.title} ya está creada, eliminela y luego inserte de nuevo la playlist"))
-            textfield_url.disabled = False
-            search_button.disabled = False
 
-            if len(DownActivitiesList) == 0:
-                estado.visible = False
-            page.remove(progress_ring)
-
-        except error.URLError:
-            page.open(show_alert_error("Revise su red, podría estar desconectado..."))
-            textfield_url.disabled = False
-            search_button.disabled = False
-
-            if len(DownActivitiesList) == 0:
-                estado.visible = False
-            page.remove(progress_ring)
-
-        except Exception as err:
-            page.open(show_alert_error(err))
-            textfield_url.disabled = False
-            search_button.disabled = False
-
-            if len(DownActivitiesList) == 0:
-                estado.visible = False
-            page.remove(progress_ring)
-
-        try:
             for video in playlist.videos:
                 video.register_on_progress_callback(on_progress)
                 video.register_on_complete_callback(on_complete)
@@ -255,6 +240,21 @@ def main(page: ft.Page):
                         list_activity.controls.append(activity.show_activity())
 
                 page.update()
+        except FileExistsError:
+            page.open(show_alert_error(
+                f"La carpeta {playlist.title} ya está creada, eliminela y luego inserte de nuevo la playlist"))
+            textfield_url.disabled = False
+            search_button.disabled = False
+            if len(DownActivitiesList) == 0:
+                estado.visible = False
+            page.remove(progress_ring)
+        except error.URLError:
+            page.open(show_alert_error("Revise su red, podría estar desconectado..."))
+            textfield_url.disabled = False
+            search_button.disabled = False
+            if len(DownActivitiesList) == 0:
+                estado.visible = False
+            page.remove(progress_ring)
         except Exception as err:
             page.open(show_alert_error(err))
             list_activity.controls.clear()
@@ -275,6 +275,11 @@ def main(page: ft.Page):
         return rows
 
     def down_options(streams):
+        yt = YouTube(textfield_url.value)
+        captions_options.options.clear()
+        for caption in yt.captions:
+            captions_options.options.append(ft.dropdown.Option(caption.code))
+
         list_down_options.controls.append(
             ft.DataTable(
                 columns=[
@@ -325,9 +330,9 @@ def main(page: ft.Page):
         )
         page.update()
 
-    search_button = ft.IconButton(icon=ft.icons.SEARCH, on_click=validacion)
+    search_button = ft.IconButton(icon=ft.icons.SEARCH, on_click=validation)
     textfield_url = ft.TextField(label="URL", width=600, hint_text="Escriba la URL del video aquí",
-                                 on_submit=validacion)
+                                 on_submit=validation)
 
     page.appbar = ft.AppBar(
         title=title,
@@ -352,6 +357,7 @@ def main(page: ft.Page):
             controls=[
                 textfield_url,
                 search_button,
+                captions_options,
                 estado
             ],
             alignment=ft.MainAxisAlignment.CENTER

@@ -1,4 +1,4 @@
-from pytubefix import Stream
+from pytubefix import Stream, YouTube
 import flet as ft
 
 
