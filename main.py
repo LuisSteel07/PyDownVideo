@@ -1,9 +1,11 @@
 import flet as ft
-import os
+from os import remove
+from moviepy.editor import *
 from urllib import error
 from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Caption
 from DownActivity import DownActivity
 from DownOption import DownOption
+from util import parsing_name_file
 
 DownActivitiesList: list[DownActivity] = []
 
@@ -87,14 +89,19 @@ def main(page: ft.Page):
         porcent = bytes_dowloaded / total_filesize * 100
 
         DownActivitiesList[0].set_progress(round(porcent))
-
         page.update()
 
-    def on_complete(data, path: str):
-        del DownActivitiesList[0]
-        del list_activity.controls[0]
+    # Funcion para usar en posteriores versiones
+    # def on_complete(stream, filepath):
+    #     del DownActivitiesList[0]
+    #     del list_activity.controls[0]
+    #     page.update()
+    #     admin_list_activities(next_process=True)
+
+    def on_progress_convert():
+        DownActivitiesList[0].progress_bar.value = None
+        DownActivitiesList[0].progress_label.value = "Convirtiendo..."
         page.update()
-        admin_list_activities(next_process=True)
 
     def admin_list_activities(stream: Stream = None, path: str = "", next_process: bool = False):
         estado.visible = False
@@ -133,7 +140,7 @@ def main(page: ft.Page):
                 yt = Playlist(textfield_url.value)
                 down_options_playlist(yt)
             else:
-                yt = YouTube(textfield_url.value, on_complete_callback=on_complete, on_progress_callback=on_progress)
+                yt = YouTube(textfield_url.value, on_progress_callback=on_progress)
                 down_options(yt.streams)
 
             estado.visible = False
@@ -161,13 +168,30 @@ def main(page: ft.Page):
             path = f"{os.path.expanduser('~')}\\Downloads\\"
         elif textfield_path_file.value != "":
             path = textfield_path_file.value
-
         try:
-            if captions_options.value is not None:
-                caption: Caption | None = yt.captions.get(f'{captions_options.value}')
-                if caption is not None:
-                    caption.download(title=yt.title, output_path=path)
-            stream.download(path)
+            if stream.type == "audio":
+                stream.download(path, mp3=True)
+            elif stream.type == "video":
+                video_path = stream.download(path)
+                if captions_options.value is not None:
+                    caption: Caption | None = yt.captions.get(f'{captions_options.value}')
+                    if caption is not None:
+                        caption.download(title=yt.title, output_path=path)
+                if not stream.is_progressive:
+                    audio_path = yt.streams.get_audio_only().download(path, mp3=True)
+                    video = VideoFileClip(video_path)
+                    audio = AudioFileClip(audio_path)
+                    audio_compose = CompositeAudioClip([audio])
+                    video.audio = audio_compose
+                    on_progress_convert()
+                    video.write_videofile(
+                        f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4", threads=4)
+                    remove(video_path)
+                    remove(audio_path)
+            del DownActivitiesList[0]
+            del list_activity.controls[0]
+            page.update()
+            admin_list_activities(next_process=True)
 
         except error.URLError:
             page.open(show_alert_error("Revise su red, podría estar desconectado..."))
@@ -195,15 +219,12 @@ def main(page: ft.Page):
         page.update()
 
         try:
-            carpet_name = (((((((((playlist.title.replace("/", "")).replace("\\", "")).replace(":", "")).replace("*",
-                                                                                                                 "")).replace(
-                "?", "")).replace("\"", "")).replace("<", "")).replace(">", "")).replace("|", "")).strip()
+            carpet_name = parsing_name_file(playlist.title)
             os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}")
             playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
 
             for video in playlist.videos:
                 video.register_on_progress_callback(on_progress)
-                video.register_on_complete_callback(on_complete)
 
                 if textfield_path_file.value == "":
                     if type_content == "hight":
@@ -287,7 +308,6 @@ def main(page: ft.Page):
                     ft.DataColumn(ft.Text("Calidad")),
                     ft.DataColumn(ft.Text("Tamaño")),
                     ft.DataColumn(ft.Text("Extensión")),
-                    ft.DataColumn(ft.Text("Progessive")),
                     ft.DataColumn(ft.Text("Acción")),
                 ],
                 rows=create_rows(streams),

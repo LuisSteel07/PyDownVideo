@@ -1,11 +1,11 @@
 {
   "name": "pydownvideo",
-  "version": "0.6.3",
+  "version": "0.7.2",
   "description": "Programa para descargar videos de youtube de manera rápida y eficiente",
   "main": "main.py",
   "scripts": {
     "dev": "flet main.py",
-    "build": "flet pack main.py -i python.ico"
+    "build": "flet pack main.py"
   },
   "author": "luisSteel07",
   "license": "CC0 1.0 Universal",
