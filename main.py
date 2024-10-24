@@ -40,7 +40,7 @@ def main(page: ft.Page):
         controls=[]
     )
 
-    list_down_options = ft.Row(
+    list_down_options = ft.Column(
         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         controls=[]
     )
@@ -55,9 +55,8 @@ def main(page: ft.Page):
     ], alignment=ft.MainAxisAlignment.CENTER)
 
     captions_options = ft.Dropdown(
-        options=[],
-        width=100,
-        tooltip="Idioma del subtitulo a descargar"
+        width=250,
+        tooltip="Idioma del subtítulo disponible a descargar"
     )
 
     def change_theme(e):
@@ -91,13 +90,6 @@ def main(page: ft.Page):
         DownActivitiesList[0].set_progress(round(porcent))
         page.update()
 
-    # Funcion para usar en posteriores versiones
-    # def on_complete(stream, filepath):
-    #     del DownActivitiesList[0]
-    #     del list_activity.controls[0]
-    #     page.update()
-    #     admin_list_activities(next_process=True)
-
     def on_progress_convert():
         DownActivitiesList[0].progress_bar.value = None
         DownActivitiesList[0].progress_label.value = "Convirtiendo..."
@@ -118,12 +110,11 @@ def main(page: ft.Page):
         else:
             list_down_options.controls = []
             estado.visible = True
-            page.update()
             activity = DownActivity(YouTube(textfield_url.value), stream, path)
             list_activity.controls.append(activity.show_activity())
 
-            page.update()
             DownActivitiesList.append(activity)
+            page.update()
             if len(DownActivitiesList) == 1:
                 download(DownActivitiesList[0].stream[0], DownActivitiesList[0].path)
 
@@ -141,7 +132,7 @@ def main(page: ft.Page):
                 down_options_playlist(yt)
             else:
                 yt = YouTube(textfield_url.value, on_progress_callback=on_progress)
-                down_options(yt.streams)
+                down_options(yt, yt.streams)
 
             estado.visible = False
             page.update()
@@ -168,11 +159,12 @@ def main(page: ft.Page):
             path = f"{os.path.expanduser('~')}\\Downloads\\"
         elif textfield_path_file.value != "":
             path = textfield_path_file.value
+
         try:
             if stream.type == "audio":
-                stream.download(path, mp3=True)
+                stream.download(path, mp3=True, filename=parsing_name_file(DownActivitiesList[0].yt.title))
             elif stream.type == "video":
-                video_path = stream.download(path)
+                video_path = stream.download(path, filename=parsing_name_file(DownActivitiesList[0].yt.title))
                 if captions_options.value is not None:
                     caption: Caption | None = yt.captions.get(f'{captions_options.value}')
                     if caption is not None:
@@ -192,7 +184,6 @@ def main(page: ft.Page):
             del list_activity.controls[0]
             page.update()
             admin_list_activities(next_process=True)
-
         except error.URLError:
             page.open(show_alert_error("Revise su red, podría estar desconectado..."))
             list_activity.controls.clear()
@@ -295,11 +286,11 @@ def main(page: ft.Page):
             rows.append(DownOption(stream).show_option(admin_list_activities))
         return rows
 
-    def down_options(streams):
-        yt = YouTube(textfield_url.value)
-        captions_options.options.clear()
-        for caption in yt.captions:
-            captions_options.options.append(ft.dropdown.Option(caption.code))
+    def down_options(yt: YouTube, streams):
+        for caption in yt.captions.all():
+            captions_options.options.append(
+                ft.dropdown.Option(caption.code, caption.name)
+            )
 
         list_down_options.controls.append(
             ft.DataTable(
