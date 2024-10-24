@@ -1,7 +1,7 @@
-# Proyecto PyDownVideo (Versión 0.6.4)
+# Proyecto PyDownVideo (Versión 0.7.6)
 
 <div style="display: flex; justify-content: center; gap:100px;">
-    <img src="./src/source/python.png" alt="PyDownVideo Logo" width="120"/>
+    <img src="./src/python.png" alt="PyDownVideo Logo" width="120"/>
 </div>
 
 
@@ -14,7 +14,7 @@ Este proyecto trata sobre la creación de un programa escrito en Python con el p
 
 # Diseño de la Clase DownActivity
 
-<img src="./src/source/DownActivity.svg" alt="Python Lenguage Logo"/>
+<img src="./src/DownActivity.svg" alt="Python Lenguage Logo"/>
 
 ## Atributos
 - **stream** se encarga de almacenar el stream que se va a descargar.
@@ -76,21 +76,10 @@ def on_progress(stream: Stream, chunk, bytes_remaining):
 
 Este calcula el porcentaje de descarga y al primer video de la cola de descargas le actualiza su porcentaje.
 
-### on_complete
-Este también se utiliza de callback en la declaración de los videos a descargar, pero se ejecutará a la hora de que el mismo termine.
-```python
-def on_complete(data, path: str):
-    del DownActivitiesList[0]
-    del list_activity.controls[0]
-    page.update()
-    admin_list_activities(next_process=True)
-```
-
-Este al terminar elimina el primer video (el que se estaba descargando) y llama a admin_list_activities() con el parametro **next_process = True** para ejecutar la descarga del siguiente video.
-
 ## DownActivitiesList
 El programa también posee esta lista en la cual se agregarán objetos de DownActivity. Esta es la cola principal de descargas, que posteriormente es administrada por otras funcionas. 
 
 # Flujo de actividades
 
-<img src="src/source/mermaid.live_view.png" />
+## Flujo de descarga
+<img src="src/mermaid.live_view.png" />

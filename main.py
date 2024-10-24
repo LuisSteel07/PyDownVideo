@@ -218,18 +218,17 @@ def main(page: ft.Page):
             if stream.type == "audio":
                 stream.download(path, mp3=True, filename=parsing_name_file(DownActivitiesList[0].yt.title))
             elif stream.type == "video":
-                video_path = stream.download(path, filename=parsing_name_file(DownActivitiesList[0].yt.title))
+                video_path = stream.download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp4")
                 if captions_options.value is not None:
                     caption: Caption | None = yt.captions.get(f'{captions_options.value}')
                     if caption is not None:
                         caption.download(title=yt.title, output_path=path)
                 if not stream.is_progressive:
-                    audio_path = yt.streams.get_audio_only().download(path, mp3=True)
+                    on_progress_convert()
+                    audio_path = yt.streams.get_audio_only().download(path, mp3=True, filename=parsing_name_file(DownActivitiesList[0].yt.title))
                     video = VideoFileClip(video_path)
                     audio = AudioFileClip(audio_path)
-                    audio_compose = CompositeAudioClip([audio])
-                    video.audio = audio_compose
-                    on_progress_convert()
+                    video.audio = CompositeAudioClip([audio])
                     video.write_videofile(
                         f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4", threads=4)
                     remove(video_path)
@@ -260,51 +259,30 @@ def main(page: ft.Page):
         estado.visible = True
         progress_ring.visible = False
         playlist_path = ""
-
         page.update()
 
         try:
             carpet_name = parsing_name_file(playlist.title)
-            os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}")
-            playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
+            if textfield_path_file.value == "":
+                os.mkdir(f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}")
+                playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
+            elif textfield_path_file.value != "":
+                os.mkdir(f"{textfield_path_file.value}\\{carpet_name}")
+                playlist_path = f"{textfield_path_file.value}\\Downloads\\{carpet_name}"
 
             for video in playlist.videos:
+                activity = 0
                 video.register_on_progress_callback(on_progress)
 
-                if textfield_path_file.value == "":
-                    if type_content == "hight":
-                        activity = DownActivity(video, video.streams.get_highest_resolution(), playlist_path)
-                        DownActivitiesList.append(
-                            DownActivity(video, video.streams.get_highest_resolution(), playlist_path))
-                        list_activity.controls.append(activity.show_activity())
+                if type_content == "hight":
+                    activity = DownActivity(video, video.streams.get_highest_resolution(), playlist_path)
+                elif type_content == "low":
+                    activity = DownActivity(video, video.streams.get_lowest_resolution(), playlist_path)
+                elif type_content == "audio":
+                    activity = DownActivity(video, video.streams.get_audio_only(), playlist_path)
 
-                    elif type_content == "low":
-                        activity = DownActivity(video, video.streams.get_lowest_resolution(), playlist_path)
-                        DownActivitiesList.append(
-                            DownActivity(video, video.streams.get_lowest_resolution(), playlist_path))
-                        list_activity.controls.append(activity.show_activity())
-                    elif type_content == "audio":
-                        activity = DownActivity(video, video.streams.get_audio_only(), playlist_path)
-                        DownActivitiesList.append(DownActivity(video, video.streams.get_audio_only(), playlist_path))
-                        list_activity.controls.append(activity.show_activity())
-                elif textfield_path_file.value != "":
-                    if type_content == "hight":
-                        activity = DownActivity(video, video.streams.get_highest_resolution(),
-                                                textfield_path_file.value)
-                        DownActivitiesList.append(
-                            DownActivity(video, video.streams.get_highest_resolution(), textfield_path_file.value))
-                        list_activity.controls.append(activity.show_activity())
-                    elif type_content == "low":
-                        activity = DownActivity(video, video.streams.get_lowest_resolution(), textfield_path_file.value)
-                        DownActivitiesList.append(
-                            DownActivity(video, video.streams.get_lowest_resolution(), textfield_path_file.value))
-                        list_activity.controls.append(activity.show_activity())
-                    elif type_content == "audio":
-                        activity = DownActivity(video, video.streams.get_audio_only(), textfield_path_file.value)
-                        DownActivitiesList.append(
-                            DownActivity(video, video.streams.get_audio_only(), textfield_path_file.value))
-                        list_activity.controls.append(activity.show_activity())
-
+                DownActivitiesList.append(activity)
+                list_activity.controls.append(activity.show_activity())
                 page.update()
         except FileExistsError:
             page.open(show_alert_error(
