@@ -10,6 +10,60 @@ from util import parsing_name_file
 DownActivitiesList: list[DownActivity] = []
 
 
+class PrincipalMain:
+    def __init__(self, page: ft.Page):
+        self.title = "PyDownVideo"
+        self.horizontal_alignment = ft.MainAxisAlignment.CENTER
+        self.scroll = ft.ScrollMode.ALWAYS
+        self.theme_mode = ft.ThemeMode.DARK
+
+        self.theme_icon = ft.PopupMenuItem("Tema", icon=ft.icons.LIGHT_MODE, on_click=lambda e: change_theme(e))
+        self.title = ft.Text(value="PyDownVideo", size=30, weight=ft.FontWeight.BOLD)
+        self.estado = ft.ProgressRing(visible=False)
+        self.textfield_path_file = ft.TextField(
+            label="Directorio",
+            width=600,
+            tooltip="Coloque un directorio donde desea que se guarde el video/audio (Predeterminado es Download)")
+        self.config_alert = ft.AlertDialog(
+            modal=True,
+            adaptive=True,
+            title=ft.Text("Establecer Ruta de Descarga:"),
+            content=self.textfield_path_file, actions=[
+                ft.TextButton("Cerrar", on_click=lambda e: page.close(self.config_alert))],
+        )
+        self.list_activity = ft.Column(scroll=ft.ScrollMode.ALWAYS, controls=[])
+        self.list_down_options = ft.Column(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[])
+        self.progress_ring = ft.Row([
+            ft.Column([
+                ft.Row([
+                    ft.ProgressRing(),
+                ], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Text("Buscando Archivo..."),
+            ]),
+        ], alignment=ft.MainAxisAlignment.CENTER)
+        self.captions_options = ft.Dropdown(width=250, tooltip="Idioma del subtítulo disponible a descargar")
+
+        def change_theme(e):
+            if page.theme_mode == ft.ThemeMode.DARK:
+                page.theme_mode = ft.ThemeMode.LIGHT
+                self.theme_icon.icon = ft.icons.DARK_MODE
+            elif page.theme_mode == ft.ThemeMode.LIGHT:
+                page.theme_mode = ft.ThemeMode.DARK
+                self.theme_icon.icon = ft.icons.LIGHT_MODE
+            page.update()
+
+    def show_alert_error(self, page: ft.Page, err) -> ft.AlertDialog:
+        alert = ft.AlertDialog(
+            modal=True,
+            adaptive=True,
+            title=ft.Text("Error"),
+            content=ft.Text(f"Informacion: {err}"),
+            actions=[
+                ft.TextButton("Cerrar", on_click=lambda e: page.close(alert)),
+            ],
+        )
+        return alert
+
 def main(page: ft.Page):
     page.title = "PyDownVideo"
     page.horizontal_alignment = ft.MainAxisAlignment.CENTER
