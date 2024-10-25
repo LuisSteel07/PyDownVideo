@@ -1,3 +1,9 @@
+# Version 0.7.10
+- Mejora del diseño.
+- Agrego de botón para cancelar la selección de video a descargar
+- Mejora de la documentación del proyecto.
+- Optimización de la conversión de videos.
+
 # Version 0.7.6
 - Cambios en el rendimiento y lógica del código del programa.
 

@@ -10,9 +10,12 @@ main.spec
 build/
 dist/
 
-# IDE PyCharm configuration
+# IDE & Code Editor configurations
 .idea/
 .vscode/
+
+# testing
+test/
 
 #Ignore venv
 .venv/

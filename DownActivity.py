@@ -26,3 +26,6 @@ class DownActivity:
     def set_progress(self, progress: int):
         self.progress_bar.value = progress / 100
         self.progress_label.value = f"{progress}%"
+
+    def set_progress_value(self, progress):
+        self.progress_bar.value = progress / 100

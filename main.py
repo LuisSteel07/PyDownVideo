@@ -1,3 +1,8 @@
+import os.path
+import threading
+import time
+from math import floor
+
 import flet as ft
 from os import remove
 from moviepy.editor import *
@@ -5,7 +10,7 @@ from urllib import error
 from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Caption
 from DownActivity import DownActivity
 from DownOption import DownOption
-from util import parsing_name_file
+from util import parsing_name_file, wrap_text
 
 DownActivitiesList: list[DownActivity] = []
 
@@ -41,8 +46,17 @@ def main(page: ft.Page):
     )
 
     list_down_options = ft.Column(
-        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        width=1200,
         controls=[]
+    )
+
+    cancel_download_button = ft.IconButton(
+        icon=ft.icons.CLOSE,
+        icon_size=30,
+        disabled=True,
+        on_click=lambda e: cancel_download()
     )
 
     progress_ring = ft.Row([
@@ -69,7 +83,42 @@ def main(page: ft.Page):
 
         page.update()
 
+    def on_progress_conv(output_path: str, final_size):
+        # Hace un tiempo de espera antes de leer el archivo
+        # para que pueda encontrar el archivo exportado
+        time.sleep(5)
+
+        while True:
+            try:
+                file_size = os.path.getsize(output_path)
+                progress = (file_size / final_size) * 100
+                if progress >= 99:
+                    break
+                DownActivitiesList[0].set_progress_value(progress)
+                page.update()
+                time.sleep(3)
+            except FileNotFoundError:
+                time.sleep(10)
+                continue
+
+    def cancel_download():
+        list_down_options.controls.clear()
+        search_button.disabled = False
+        textfield_url.disabled = False
+        textfield_url.value = ""
+        page.update()
+
     def show_alert_error(err) -> ft.AlertDialog:
+        search_button.disabled = False
+        textfield_url.disabled = False
+        cancel_download_button.disabled = True
+        page.remove(progress_ring)
+
+        if len(DownActivitiesList) == 0:
+            estado.visible = False
+
+        page.update()
+
         alert = ft.AlertDialog(
             modal=True,
             adaptive=True,
@@ -79,7 +128,6 @@ def main(page: ft.Page):
                 ft.TextButton("Cerrar", on_click=lambda e: page.close(alert)),
             ],
         )
-
         return alert
 
     def on_progress(stream: Stream, chunk, bytes_remaining):
@@ -88,11 +136,6 @@ def main(page: ft.Page):
         porcent = bytes_dowloaded / total_filesize * 100
 
         DownActivitiesList[0].set_progress(round(porcent))
-        page.update()
-
-    def on_progress_convert():
-        DownActivitiesList[0].progress_bar.value = None
-        DownActivitiesList[0].progress_label.value = "Convirtiendo..."
         page.update()
 
     def admin_list_activities(stream: Stream = None, path: str = "", next_process: bool = False):
@@ -124,6 +167,7 @@ def main(page: ft.Page):
         try:
             search_button.disabled = True
             textfield_url.disabled = True
+            cancel_download_button.disabled = False
             page.add(progress_ring)
             page.update()
 
@@ -138,17 +182,8 @@ def main(page: ft.Page):
             page.update()
         except exceptions.RegexMatchError:
             page.open(show_alert_error("URL Inválida"))
-            search_button.disabled = False
-            textfield_url.disabled = False
-            page.remove(progress_ring)
-            page.update()
         except Exception as err:
-            page.open(show_alert_error(err))
-            print(type(err))
-            search_button.disabled = False
-            textfield_url.disabled = False
-            page.remove(progress_ring)
-            page.update()
+            page.open(show_alert_error(f"{type(err)} : {err}"))
 
     def download(stream: Stream, path: str = ""):
         yt: YouTube = YouTube(textfield_url.value)
@@ -170,13 +205,21 @@ def main(page: ft.Page):
                     if caption is not None:
                         caption.download(title=yt.title, output_path=path)
                 if not stream.is_progressive:
-                    on_progress_convert()
-                    audio_path = yt.streams.get_audio_only().download(path, mp3=True, filename=parsing_name_file(DownActivitiesList[0].yt.title))
+                    DownActivitiesList[0].progress_label.value = "Convirtiendo..."
+                    page.update()
+                    audio_path = yt.streams.get_audio_only().download(path, mp3=True, filename=parsing_name_file(
+                        DownActivitiesList[0].yt.title))
                     video = VideoFileClip(video_path)
                     audio = AudioFileClip(audio_path)
                     video.audio = CompositeAudioClip([audio])
+                    output_path = f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4"
+
+                    total_size = os.path.getsize(video_path) + os.path.getsize(audio_path)
+                    t = threading.Thread(target=on_progress_conv, args=(output_path, total_size))
+                    t.start()
                     video.write_videofile(
-                        f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4", threads=4)
+                        filename=output_path, threads=8, fps=30)
+                    t.join()
                     remove(video_path)
                     remove(audio_path)
             del DownActivitiesList[0]
@@ -185,20 +228,8 @@ def main(page: ft.Page):
             admin_list_activities(next_process=True)
         except error.URLError:
             page.open(show_alert_error("Revise su red, podría estar desconectado..."))
-            list_activity.controls.clear()
-            textfield_url.disabled = False
-            search_button.disabled = False
-            estado.visible = False
-            list_activity.controls.clear()
-            page.update()
-            return -1
         except Exception as err:
             page.open(show_alert_error(f"{type(err)} : {err}"))
-            textfield_url.disabled = False
-            search_button.disabled = False
-            estado.value = False
-            list_activity.controls.clear()
-            page.update()
 
     def download_playlist(playlist: Playlist, type_content: str):
         list_down_options.controls = []
@@ -233,25 +264,10 @@ def main(page: ft.Page):
         except FileExistsError:
             page.open(show_alert_error(
                 f"La carpeta {playlist.title} ya está creada, eliminela y luego inserte de nuevo la playlist"))
-            textfield_url.disabled = False
-            search_button.disabled = False
-            if len(DownActivitiesList) == 0:
-                estado.visible = False
-            page.remove(progress_ring)
         except error.URLError:
             page.open(show_alert_error("Revise su red, podría estar desconectado..."))
-            textfield_url.disabled = False
-            search_button.disabled = False
-            if len(DownActivitiesList) == 0:
-                estado.visible = False
-            page.remove(progress_ring)
         except Exception as err:
-            page.open(show_alert_error(err))
-            list_activity.controls.clear()
-            textfield_url.disabled = False
-            search_button.disabled = False
-            estado.visible = False
-            page.update()
+            page.open(show_alert_error(f"{type(err)} : {err}"))
 
         if textfield_path_file.value == "":
             admin_list_activities(path=playlist_path, next_process=True)
@@ -269,6 +285,16 @@ def main(page: ft.Page):
             captions_options.options.append(
                 ft.dropdown.Option(caption.code, caption.name)
             )
+
+        list_down_options.controls.append(
+            ft.Row(
+                controls=[
+                    ft.Image(yt.thumbnail_url, width=240),
+                    ft.Text(wrap_text(yt.title), size=30),
+                ],
+                spacing=30
+            )
+        )
 
         list_down_options.controls.append(
             ft.DataTable(
@@ -347,6 +373,7 @@ def main(page: ft.Page):
                 textfield_url,
                 search_button,
                 captions_options,
+                cancel_download_button,
                 estado
             ],
             alignment=ft.MainAxisAlignment.CENTER
