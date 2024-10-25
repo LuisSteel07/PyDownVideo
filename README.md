@@ -1,4 +1,4 @@
-# Proyecto PyDownVideo (Versión 0.7.6)
+# Proyecto PyDownVideo (Versión 0.7.13)
 
 <div style="display: flex; justify-content: center; gap:100px;">
     <img src="./src/python.png" alt="PyDownVideo Logo" width="120"/>
@@ -11,6 +11,7 @@ Este proyecto trata sobre la creación de un programa escrito en Python con el p
 ## Librerías utililzadas para su desarrollo:
 - Flet (Para el llamativo diseño)
 - Pytubefix (Para hacer posible descargar los videos de Youtube)
+- MoviePy (Para realizar conversiones y unir videos no progresivos de pytubefix)
 
 # Diseño de la Clase DownActivity
 
@@ -37,10 +38,11 @@ Este proyecto trata sobre la creación de un programa escrito en Python con el p
 - **estado**: componente que muestra si se está descargando un video o no.
 - **search_button**: botón que ejecuta la funcion de validación.
 - **textfield_url**: componente en donde agregaremos la URL del video a descargar.
+- **cancel_download_button**: botón que se encarga de cancelar la selección del video que se descargará
 
 # Funciones Importantes 
 
-### validacion
+### validation
 Esta función se encargará de validar la URL insartada en **textfield_url**, además de verificar si es una Playlist o un video solamente.
 
 ### down_options
@@ -73,8 +75,32 @@ def on_progress(stream: Stream, chunk, bytes_remaining):
 
     page.update()
 ```
-
 Este calcula el porcentaje de descarga y al primer video de la cola de descargas le actualiza su porcentaje.
+
+### on_progress_conv
+```python
+def on_progress_conv(output_path: str, final_size):
+    time.sleep(5)
+
+    while True:
+        try:
+            file_size = os.path.getsize(output_path)
+            progress = (file_size / final_size) * 100
+            if progress >= 99:
+                break
+            DownActivitiesList[0].set_progress_value(progress)
+            page.update()
+            time.sleep(3)
+        except FileNotFoundError:
+            time.sleep(10)
+            continue
+```
+Esta función se ejecutará en un hila aparte (usando el módulo threading de python).
+En donde intentará abrir el archivo que exportará MoviePy, si no lo encuentra (FileNotFoundError) espera otros 10seg para volver a verificar, 
+si el archivo está, calculará el tamaño del archivo de salida y sacará el porcentaje según el total de la suma del video y audio mezclados 
+(que da el total qeu ocupa el archivo de salida) y lo multiplica por 100 para obtener el porcentaje, si es mayor de 99 o igual 
+(se hace así ya que el total y la parte calculadas son aproximadas) termina el thread, de caso contrario actualizará el porcentaje 
+mostrado, actualizará y esperará otros 3seg para calcular nuevamente el porcentaje.
 
 ## DownActivitiesList
 El programa también posee esta lista en la cual se agregarán objetos de DownActivity. Esta es la cola principal de descargas, que posteriormente es administrada por otras funcionas. 
@@ -82,4 +108,4 @@ El programa también posee esta lista en la cual se agregarán objetos de DownAc
 # Flujo de actividades
 
 ## Flujo de descarga
-<img src="src/mermaid.live_view.png" />
+<img src="src/mermaid.live_view_short.png" />
