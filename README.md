@@ -1,4 +1,4 @@
-# Proyecto PyDownVideo (Versión 0.7.13)
+# Proyecto PyDownVideo (Versión 0.7.10)
 
 <div style="display: flex; justify-content: center; gap:100px;">
     <img src="./src/python.png" alt="PyDownVideo Logo" width="120"/>
