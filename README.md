@@ -109,3 +109,6 @@ El programa también posee esta lista en la cual se agregarán objetos de DownAc
 
 ## Flujo de descarga
 <img src="src/mermaid.live_view_short.png" />
+
+# Licencia 
+Este proyecto hace uso de la licencia **CC BY-NC-ND 4.0** (Attribution-NonCommercial-NoDerivatives 4.0 International)
