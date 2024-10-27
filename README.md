@@ -1,4 +1,4 @@
-# Proyecto PyDownVideo (Versión 0.7.10)
+# Proyecto PyDownVideo (Versión 0.7.12)
 
 <div style="display: flex; justify-content: center; gap:100px;">
     <img src="./src/python.png" alt="PyDownVideo Logo" width="120"/>
@@ -80,13 +80,13 @@ Este calcula el porcentaje de descarga y al primer video de la cola de descargas
 ### on_progress_conv
 ```python
 def on_progress_conv(output_path: str, final_size):
-    time.sleep(5)
+    time.sleep(4)
 
     while True:
         try:
             file_size = os.path.getsize(output_path)
             progress = (file_size / final_size) * 100
-            if progress >= 99:
+            if progress >= 80:
                 break
             DownActivitiesList[0].set_progress_value(progress)
             page.update()

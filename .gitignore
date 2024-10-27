@@ -18,4 +18,4 @@ dist/
 test/
 
 #Ignore venv
-.venv/
+venv/
