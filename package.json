@@ -5,9 +5,9 @@
   "main": "main.py",
   "scripts": {
     "dev": "flet main.py",
-    "build": "flet pack main.py"
+    "build": "flet pack main.py -i python.ico"
   },
   "author": "luisSteel07",
-  "license": "CC0 1.0 Universal",
+  "license": "CC BY-NC-ND 4.0",
   "repository": "https://github.com/LuisSteel07/PyDownVideo"
 }

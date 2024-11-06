@@ -10,6 +10,7 @@ from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Captio
 
 from DownActivity import DownActivity
 from DownOption import DownOption
+from SelectVideo import SelectVideo
 from util import parsing_name_file, wrap_text
 
 DownActivitiesList: list[DownActivity] = []
@@ -163,6 +164,35 @@ def main(page: ft.Page):
 
         page.update()
 
+    def select_playlist_videos(playlist: Playlist):
+        list_down_options.controls.clear()
+        list_select_videos = []
+        view_panel_selected_videos = ft.ListView()
+
+        def show_values():
+            list_select: list[YouTube] = []
+            for i in list_select_videos:
+                if i.checkbox.value:
+                    list_select.append(i.video)
+            down_options_playlist(playlist, list_select)
+
+        for video in playlist.videos:
+            list_select_videos.append(
+                SelectVideo(video.title, video.thumbnail_url, video)
+            )
+            view_panel_selected_videos.controls.append(
+                list_select_videos[len(list_select_videos) - 1].show_select_video()
+            )
+
+        view_panel_selected_videos.controls.append(
+            ft.TextButton("Descargar Selcción", on_click=lambda e: show_values())
+        )
+
+        list_down_options.controls.append(view_panel_selected_videos)
+
+        progress_ring.visible = False
+        page.update()
+
     def validation(e):
         try:
             search_button.disabled = True
@@ -173,7 +203,7 @@ def main(page: ft.Page):
 
             if "list" in textfield_url.value:
                 yt = Playlist(textfield_url.value)
-                down_options_playlist(yt)
+                select_playlist_videos(yt)
             else:
                 yt = YouTube(textfield_url.value, on_progress_callback=on_progress)
                 down_options(yt, yt.streams)
@@ -231,7 +261,7 @@ def main(page: ft.Page):
         except Exception as err:
             page.open(show_alert_error(f"{type(err)} : {err}"))
 
-    def download_playlist(playlist: Playlist, type_content: str):
+    def download_playlist(playlist: Playlist, type_content: str, select_videos: list[YouTube]):
         list_down_options.controls = []
         estado.visible = True
         progress_ring.visible = False
@@ -247,7 +277,7 @@ def main(page: ft.Page):
                 os.mkdir(f"{textfield_path_file.value}\\{carpet_name}")
                 playlist_path = f"{textfield_path_file.value}\\Downloads\\{carpet_name}"
 
-            for video in playlist.videos:
+            for video in select_videos:
                 activity = 0
                 video.register_on_progress_callback(on_progress)
 
@@ -281,6 +311,7 @@ def main(page: ft.Page):
         return rows
 
     def down_options(yt: YouTube, streams):
+        captions_options.options.clear()
         for caption in yt.captions.all():
             captions_options.options.append(
                 ft.dropdown.Option(caption.code, caption.name)
@@ -313,7 +344,7 @@ def main(page: ft.Page):
         page.remove(progress_ring)
         page.update()
 
-    def down_options_playlist(playlist: Playlist):
+    def down_options_playlist(playlist: Playlist, list_select_videos: list[YouTube]):
         list_down_options.controls.append(
             ft.DataTable(
                 columns=[
@@ -326,19 +357,28 @@ def main(page: ft.Page):
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text("Alto")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: download_playlist(playlist, "hight"))),
+                                                  on_click=lambda e: download_playlist(
+                                                      playlist,
+                                                      "hight",
+                                                      list_select_videos))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Video")),
                         ft.DataCell(ft.Text("Bajo")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: download_playlist(playlist, "low"))),
+                                                  on_click=lambda e: download_playlist(
+                                                      playlist,
+                                                      "low",
+                                                      list_select_videos))),
                     ]),
                     ft.DataRow([
                         ft.DataCell(ft.Text("Audio")),
                         ft.DataCell(ft.Text("Alto")),
                         ft.DataCell(ft.IconButton(icon=ft.icons.DOWNLOAD,
-                                                  on_click=lambda e: download_playlist(playlist, "audio"))),
+                                                  on_click=lambda e: download_playlist(
+                                                      playlist,
+                                                      "audio",
+                                                      list_select_videos))),
                     ]),
                 ]
             )

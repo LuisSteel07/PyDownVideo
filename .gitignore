@@ -15,7 +15,7 @@ dist/
 .vscode/
 
 # testing
-test/
+/test/
 
 #Ignore venv
 venv/

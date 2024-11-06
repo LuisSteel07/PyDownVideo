@@ -1,9 +1,13 @@
+# Version 0.7.14
+- Add selection playlist panel
+- Optimized Code
+
 # Version 0.7.12
 - Deleted bug in function on_progress_conv
-- Update requierements.txt list
+- Update requirements.txt list
 
 # Version 0.7.10
-- Best Desing.
+- Best Design.
 - Button addition to cancel the video selection to download
 - Improvement of project documentation.
 - Optimization of video conversion.
