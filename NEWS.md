@@ -1,10 +1,14 @@
+# Version 0.8.0
+- Optimized conversion video process, now using pure ffmpeg tool, is more fast.
+- Resolved others bugs.
+
 # Version 0.7.14
-- Add selection playlist panel
-- Optimized Code
+- Add selection playlist panel.
+- Optimized Code.
 
 # Version 0.7.12
-- Deleted bug in function on_progress_conv
-- Update requirements.txt list
+- Deleted bug in function on_progress_conv.
+- Update requirements.txt list.
 
 # Version 0.7.10
 - Best Design.

@@ -1,11 +1,11 @@
 import os.path
+import subprocess
 import threading
 import time
 from urllib import error
 from os import remove
 
 import flet as ft
-from moviepy.editor import *
 from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Caption
 
 from DownActivity import DownActivity
@@ -87,8 +87,6 @@ def main(page: ft.Page):
     def on_progress_conv(output_path: str, final_size):
         # Hace un tiempo de espera antes de leer el archivo
         # para que pueda encontrar el archivo exportado
-        time.sleep(4)
-
         while True:
             try:
                 file_size = os.path.getsize(output_path)
@@ -97,9 +95,9 @@ def main(page: ft.Page):
                     break
                 DownActivitiesList[0].set_progress_value(progress)
                 page.update()
-                time.sleep(3)
+                time.sleep(2)
             except FileNotFoundError:
-                time.sleep(10)
+                time.sleep(2)
                 continue
 
     def cancel_download():
@@ -239,19 +237,21 @@ def main(page: ft.Page):
                     page.update()
                     audio_path = yt.streams.get_audio_only().download(path, mp3=True, filename=parsing_name_file(
                         DownActivitiesList[0].yt.title))
-                    video = VideoFileClip(video_path)
-                    audio = AudioFileClip(audio_path)
-                    video.audio = CompositeAudioClip([audio])
-                    output_path = f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4"
 
+                    output_path = f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4"
                     total_size = os.path.getsize(video_path) + os.path.getsize(audio_path)
+
                     t = threading.Thread(target=on_progress_conv, args=(output_path, total_size))
+
+                    cmd = f'.\\tools\\ffmpeg.exe -i "{video_path}" -i "{audio_path}" -c:v copy -c:a aac -strict experimental -shortest "{output_path}"'
+                    subprocess.run(cmd, shell=True)
+
                     t.start()
-                    video.write_videofile(
-                        filename=output_path, threads=8, fps=30)
                     t.join()
+
                     remove(video_path)
                     remove(audio_path)
+
             del DownActivitiesList[0]
             del list_activity.controls[0]
             page.update()

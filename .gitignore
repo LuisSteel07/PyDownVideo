@@ -9,13 +9,14 @@ main.spec
 # Build and Pack
 build/
 dist/
+tools/
 
 # IDE & Code Editor configurations
 .idea/
 .vscode/
 
 # testing
-/test/
+test/
 
 #Ignore venv
 venv/
