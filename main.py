@@ -165,9 +165,13 @@ def main(page: ft.Page):
     def select_playlist_videos(playlist: Playlist):
         list_down_options.controls.clear()
         list_select_videos = []
-        view_panel_selected_videos = ft.ListView()
+        view_panel_selected_videos = ft.ListView(
+            width=900
+        )
 
         def show_values():
+            view_panel_selected_videos.visible = False
+            page.update()
             list_select: list[YouTube] = []
             for i in list_select_videos:
                 if i.checkbox.value:
@@ -183,7 +187,7 @@ def main(page: ft.Page):
             )
 
         view_panel_selected_videos.controls.append(
-            ft.TextButton("Descargar Selcción", on_click=lambda e: show_values())
+            ft.TextButton("Descargar Selcción", on_click=lambda e: show_values(), width=120)
         )
 
         list_down_options.controls.append(view_panel_selected_videos)

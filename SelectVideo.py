@@ -1,6 +1,5 @@
 import flet as ft
 from pytubefix import YouTube
-
 from util import wrap_text
 
 
@@ -15,7 +14,7 @@ class SelectVideo:
         return ft.Row(
             controls=[
                 self.checkbox,
-                ft.Image(self.photo, width=240),
+                ft.Image(self.photo, width=200),
                 ft.Text(wrap_text(self.title), size=25)
             ]
         )
