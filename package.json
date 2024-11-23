@@ -1,6 +1,6 @@
 {
   "name": "pydownvideo",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Programa para descargar videos de youtube de manera rápida y eficiente",
   "main": "main.py",
   "scripts": {

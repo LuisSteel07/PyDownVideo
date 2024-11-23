@@ -1,3 +1,6 @@
+# Version 0.8.1
+- New playlist selection panel
+
 # Version 0.8.0
 - Optimized conversion video process, now using pure ffmpeg tool, is more fast.
 - Resolved others bugs.

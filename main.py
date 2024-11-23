@@ -2,9 +2,11 @@ import os.path
 import subprocess
 import threading
 import time
+from enum import verify
 from urllib import error
 from os import remove
 
+import flet
 import flet as ft
 from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Caption
 
@@ -165,18 +167,28 @@ def main(page: ft.Page):
     def select_playlist_videos(playlist: Playlist):
         list_down_options.controls.clear()
         list_select_videos = []
-        view_panel_selected_videos = ft.ListView(
-            width=900
+        view_panel_selected_videos = ft.Row(
+            width=900,
+            wrap=True,
+            spacing=15,
+            vertical_alignment=flet.CrossAxisAlignment.CENTER
+        )
+
+        panel = ft.ListView(
+            width=900,
         )
 
         def show_values():
-            view_panel_selected_videos.visible = False
+            panel.visible = False
             page.update()
             list_select: list[YouTube] = []
             for i in list_select_videos:
                 if i.checkbox.value:
                     list_select.append(i.video)
-            down_options_playlist(playlist, list_select)
+            if len(list_select) == 0:
+                page.open(show_alert_error("Lista de selección de Playlist vacía"))
+            else:
+                down_options_playlist(playlist, list_select)
 
         for video in playlist.videos:
             list_select_videos.append(
@@ -186,11 +198,14 @@ def main(page: ft.Page):
                 list_select_videos[len(list_select_videos) - 1].show_select_video()
             )
 
-        view_panel_selected_videos.controls.append(
+        panel.controls.append(
+            view_panel_selected_videos
+        )
+        panel.controls.append(
             ft.TextButton("Descargar Selcción", on_click=lambda e: show_values(), width=120)
         )
 
-        list_down_options.controls.append(view_panel_selected_videos)
+        list_down_options.controls.append(panel)
 
         progress_ring.visible = False
         page.update()
@@ -311,7 +326,8 @@ def main(page: ft.Page):
     def create_rows(streams: StreamQuery) -> list[ft.DataRow]:
         rows: list[ft.DataRow] = []
         for stream in streams:
-            rows.append(DownOption(stream).show_option(admin_list_activities))
+            if stream.mime_type == "video/mp4" or stream.mime_type == "audio/mp4":
+                rows.append(DownOption(stream).show_option(admin_list_activities))
         return rows
 
     def down_options(yt: YouTube, streams):

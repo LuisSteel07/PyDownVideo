@@ -4,7 +4,7 @@ def parsing_name_file(title: str) -> str | None:
         "?", "")).replace("\"", "")).replace("<", "")).replace(">", "")).replace("|", "")).strip()
 
 
-def wrap_text(text: str) -> str:
-    if len(text) > 45:
-        text = text[0:45] + " ..."
+def wrap_text(text: str, limit: int = 45) -> str:
+    if len(text) > limit:
+        text = text[0:limit-1] + " ..."
     return text
