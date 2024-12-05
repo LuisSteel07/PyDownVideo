@@ -9,7 +9,6 @@ main.spec
 # Build and Pack
 build/
 dist/
-tools/
 
 # IDE & Code Editor configurations
 .idea/

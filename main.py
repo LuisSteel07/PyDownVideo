@@ -2,7 +2,6 @@ import os.path
 import subprocess
 import threading
 import time
-from enum import verify
 from urllib import error
 from os import remove
 
@@ -113,7 +112,6 @@ def main(page: ft.Page):
         search_button.disabled = False
         textfield_url.disabled = False
         cancel_download_button.disabled = True
-        page.remove(progress_ring)
 
         if len(DownActivitiesList) == 0:
             estado.visible = False
@@ -234,6 +232,7 @@ def main(page: ft.Page):
 
     def download(stream: Stream, path: str = ""):
         yt: YouTube = YouTube(textfield_url.value)
+        streams = yt.streams
 
         if path != "":
             pass
@@ -244,7 +243,7 @@ def main(page: ft.Page):
 
         try:
             if stream.type == "audio":
-                stream.download(path, mp3=True, filename=parsing_name_file(DownActivitiesList[0].yt.title))
+                streams.get_audio_only().download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp3")
             elif stream.type == "video":
                 video_path = stream.download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp4")
                 if captions_options.value is not None:
@@ -254,8 +253,7 @@ def main(page: ft.Page):
                 if not stream.is_progressive:
                     DownActivitiesList[0].progress_label.value = "Convirtiendo..."
                     page.update()
-                    audio_path = yt.streams.get_audio_only().download(path, mp3=True, filename=parsing_name_file(
-                        DownActivitiesList[0].yt.title))
+                    audio_path = yt.streams.get_audio_only().download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp3")
 
                     output_path = f"{path}\\{parsing_name_file(yt.title)}[{stream.resolution}].mp4"
                     total_size = os.path.getsize(video_path) + os.path.getsize(audio_path)
