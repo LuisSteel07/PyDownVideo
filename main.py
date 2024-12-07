@@ -5,7 +5,6 @@ import time
 from urllib import error
 from os import remove
 
-import flet
 import flet as ft
 from pytubefix import YouTube, Stream, Playlist, exceptions, StreamQuery, Caption
 
@@ -169,7 +168,7 @@ def main(page: ft.Page):
             width=900,
             wrap=True,
             spacing=15,
-            vertical_alignment=flet.CrossAxisAlignment.CENTER
+            vertical_alignment=ft.CrossAxisAlignment.CENTER
         )
 
         panel = ft.ListView(

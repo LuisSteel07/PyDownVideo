@@ -3,8 +3,8 @@ __pycache__/
 
 # Others
 *.spec
-*.ico
 main.spec
+storage/
 
 # Build and Pack
 build/
