@@ -137,6 +137,7 @@ def main(page: ft.Page):
         page.update()
 
     def admin_list_activities(stream: Stream = None, path: str = "", next_process: bool = False):
+        list_activity.visible = True
         estado.visible = False
         textfield_url.disabled = False
         search_button.disabled = False
@@ -162,6 +163,7 @@ def main(page: ft.Page):
         page.update()
 
     def select_playlist_videos(playlist: Playlist):
+        list_activity.visible = False
         list_down_options.controls.clear()
         list_select_videos = []
         view_panel_selected_videos = ft.Row(
@@ -171,12 +173,12 @@ def main(page: ft.Page):
             vertical_alignment=ft.CrossAxisAlignment.CENTER
         )
 
-        # panel = ft.ListView(
-        #     width=900,
-        # )
+        panel = ft.ListView(
+            width=900,
+        )
 
         def show_values():
-            # panel.visible = False
+            panel.visible = False
             page.update()
             list_select: list[YouTube] = []
 
@@ -186,7 +188,7 @@ def main(page: ft.Page):
 
             if len(list_select) == 0:
                 page.open(show_alert_error("Lista de selección de Playlist vacía"))
-                # panel.visible = True
+                panel.visible = True
                 page.update()
             else:
                 down_options_playlist(playlist, list_select)
@@ -199,15 +201,15 @@ def main(page: ft.Page):
                 list_select_videos[len(list_select_videos) - 1].show_select_video()
             )
 
-        list_down_options.controls.append(
+        panel.controls.append(
             view_panel_selected_videos
         )
 
-        list_down_options.controls.append(
+        panel.controls.append(
             ft.TextButton("Descargar Selcción", on_click=lambda e: show_values(), width=120)
         )
 
-        # list_down_options.controls.append(panel)
+        list_down_options.controls.append(panel)
 
         progress_ring.visible = False
         page.update()
