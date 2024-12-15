@@ -171,19 +171,23 @@ def main(page: ft.Page):
             vertical_alignment=ft.CrossAxisAlignment.CENTER
         )
 
-        panel = ft.ListView(
-            width=900,
-        )
+        # panel = ft.ListView(
+        #     width=900,
+        # )
 
         def show_values():
-            panel.visible = False
+            # panel.visible = False
             page.update()
             list_select: list[YouTube] = []
+
             for i in list_select_videos:
-                if i.checkbox.value:
+                if i.checkbox.value: 
                     list_select.append(i.video)
+
             if len(list_select) == 0:
                 page.open(show_alert_error("Lista de selección de Playlist vacía"))
+                # panel.visible = True
+                page.update()
             else:
                 down_options_playlist(playlist, list_select)
 
@@ -195,14 +199,15 @@ def main(page: ft.Page):
                 list_select_videos[len(list_select_videos) - 1].show_select_video()
             )
 
-        panel.controls.append(
+        list_down_options.controls.append(
             view_panel_selected_videos
         )
-        panel.controls.append(
+
+        list_down_options.controls.append(
             ft.TextButton("Descargar Selcción", on_click=lambda e: show_values(), width=120)
         )
 
-        list_down_options.controls.append(panel)
+        # list_down_options.controls.append(panel)
 
         progress_ring.visible = False
         page.update()
@@ -231,10 +236,8 @@ def main(page: ft.Page):
 
     def download(stream: Stream, path: str = ""):
         yt: YouTube = YouTube(textfield_url.value)
-        streams = yt.streams
 
-        if path != "":
-            pass
+        if path != "": pass
         elif textfield_path_file.value == "":
             path = f"{os.path.expanduser('~')}\\Downloads\\"
         elif textfield_path_file.value != "":
@@ -242,7 +245,7 @@ def main(page: ft.Page):
 
         try:
             if stream.type == "audio":
-                streams.get_audio_only().download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp3")
+                stream.download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp3")
             elif stream.type == "video":
                 video_path = stream.download(path, filename=f"{parsing_name_file(DownActivitiesList[0].yt.title)}.mp4")
                 if captions_options.value is not None:
