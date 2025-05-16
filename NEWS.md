@@ -1,3 +1,6 @@
+# Version 0.8.2
+- Update the module pytubefix to 8.13.1
+
 # Version 0.8.1
 - New playlist selection panel
 
