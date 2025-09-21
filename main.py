@@ -296,7 +296,7 @@ def main(page: ft.Page):
                 playlist_path = f"{os.path.expanduser('~')}\\Downloads\\{carpet_name}"
             elif textfield_path_file.value != "":
                 os.mkdir(f"{textfield_path_file.value}\\{carpet_name}")
-                playlist_path = f"{textfield_path_file.value}\\Downloads\\{carpet_name}"
+                playlist_path = f"{textfield_path_file.value}\\{carpet_name}"
 
             for video in select_videos:
                 activity = 0
